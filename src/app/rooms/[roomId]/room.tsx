@@ -12,6 +12,22 @@ import {
 import { LiveList, LiveObject } from '@liveblocks/client'
 import { PropsWithChildren, ReactNode, useState } from 'react'
 import { nanoid } from 'nanoid'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -60,11 +76,44 @@ function PitchList() {
   const pitches = useStorage((root) =>
     root.pitches.filter((pitch) => !pitch.archived)
   )
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const movePitch = useMutation(
+    ({ storage }, activeId: string, overId: string) => {
+      if (activeId !== overId) {
+        const getPitchIndex = (id: string) =>
+          storage.get('pitches').findIndex((pitch) => pitch.get('id') === id)
+        const activeIndex = getPitchIndex(activeId)
+        const overIndex = getPitchIndex(overId)
+        storage.get('pitches').move(activeIndex, overIndex)
+      }
+    },
+    []
+  )
+
   return pitches.length > 0 ? (
     <ul className="flex flex-col gap-1">
-      {pitches.map((pitch) => (
-        <PitchListItem key={pitch.id} pitch={pitch} />
-      ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={(event) => {
+          const { active, over } = event
+          if (over && active.id !== over.id) {
+            movePitch(String(active.id), String(over.id))
+          }
+        }}
+      >
+        <SortableContext items={pitches} strategy={verticalListSortingStrategy}>
+          {pitches.map((pitch) => (
+            <SortablePitchListItem key={pitch.id} pitch={pitch} />
+          ))}
+        </SortableContext>
+      </DndContext>
       <li>
         <CreatePitchButton>Create new</CreatePitchButton>
       </li>
@@ -73,6 +122,25 @@ function PitchList() {
     <p>
       No pitch yet. <CreatePitchButton>Create the first one</CreatePitchButton>
     </p>
+  )
+}
+
+function SortablePitchListItem({ pitch }: { pitch: Pitch }) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: pitch.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div className="flex gap-2 items-baseline" ref={setNodeRef} style={style}>
+      <div className="cursor-move" {...listeners} {...attributes}>
+        ...
+      </div>{' '}
+      <PitchListItem pitch={pitch} />
+    </div>
   )
 }
 
@@ -102,9 +170,10 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
   return (
     <li className="flex gap-2 items-center">
       <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle} />
-      <ArchivePitchButton pitchId={pitch.id} archived={pitch.archived ?? false}>
-        Archive
-      </ArchivePitchButton>
+      <ArchivePitchButton
+        pitchId={pitch.id}
+        archived={pitch.archived ?? false}
+      />
     </li>
   )
 }
@@ -112,8 +181,10 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
 function ArchivePitchButton({
   pitchId,
   archived,
-  children,
-}: PropsWithChildren<{ pitchId: string; archived: boolean }>) {
+}: {
+  pitchId: string
+  archived: boolean
+}) {
   const archivePitch = useMutation(({ storage }) => {
     storage
       .get('pitches')
