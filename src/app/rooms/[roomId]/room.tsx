@@ -10,7 +10,13 @@ import {
   useStorage,
 } from '../../../liveblocks.config'
 import { LiveList, LiveObject } from '@liveblocks/client'
-import { PropsWithChildren, ReactNode, useState } from 'react'
+import {
+  PropsWithChildren,
+  ReactNode,
+  createContext,
+  useContext,
+  useState,
+} from 'react'
 import { nanoid } from 'nanoid'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -22,12 +28,12 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
+import assert from 'assert'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -40,35 +46,76 @@ export function Room({ roomId }: { roomId: string }) {
       }}
     >
       <ClientSideSuspense fallback={<div>Loading…</div>}>
-        {() => <RoomContent />}
+        {() => (
+          <SelectedPitchContextProvider>
+            <RoomContent />
+          </SelectedPitchContextProvider>
+        )}
       </ClientSideSuspense>
     </RoomProvider>
+  )
+}
+
+const SelectedPitchContext = createContext<{
+  selectedPitchId: string | undefined
+  setSelectedPitchId: (pitchId: string | undefined) => void
+} | null>(null)
+
+const useSelectedPitchContext = () => {
+  const context = useContext(SelectedPitchContext)
+  assert(
+    context,
+    'useSelectedContext must be used inside a SelectedPitchContextProvider'
+  )
+  return context
+}
+
+function SelectedPitchContextProvider({
+  initialSelectedPitchId,
+  children,
+}: PropsWithChildren<{ initialSelectedPitchId?: string }>) {
+  const [selectedPitchId, setSelectedPitchId] = useState<string | undefined>(
+    initialSelectedPitchId
+  )
+
+  return (
+    <SelectedPitchContext.Provider
+      value={{ selectedPitchId, setSelectedPitchId }}
+    >
+      {children}
+    </SelectedPitchContext.Provider>
   )
 }
 
 function RoomContent() {
   const others = useOthers()
   const self = useSelf()
+  const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
 
   return (
-    <>
-      <div className="p-2">
-        <p>There are {others.length} other user(s) online.</p>
-        <p>
-          You are: <strong>{self.info.fullName}</strong>
-        </p>
-      </div>
-      <div className="p-2 border-t">
-        <div className="flex gap-2 items-baseline">
-          <span>Board name:</span> <BoardName />
+    <div className="flex flex-1">
+      <div className="flex-grow-0 flex-shrink-0 border-r">
+        <div className="p-2">
+          <p>There are {others.length} other user(s) online.</p>
+          <p>
+            You are: <strong>{self.info.fullName}</strong>
+          </p>
         </div>
-        <PitchList />
+        <div className="p-2 border-t">
+          <div className="flex gap-2 items-baseline">
+            <span>Board name:</span> <BoardName />
+          </div>
+          <PitchList />
+        </div>
+        <div className="p-2 border-t">
+          <h3>Archived pitches</h3>
+          <ArchivedPitchList />
+        </div>
       </div>
-      <div className="p-2 border-t">
-        <h3>Archived pitches</h3>
-        <ArchivedPitchList />
+      <div className="flex-1 p-2">
+        <p>Selected pitch ID: {selectedPitchId ?? 'None'}</p>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -167,6 +214,8 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
       ?.set('title', title)
   }, [])
 
+  const { setSelectedPitchId } = useSelectedPitchContext()
+
   return (
     <li className="flex gap-2 items-center">
       <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle} />
@@ -174,6 +223,7 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
         pitchId={pitch.id}
         archived={pitch.archived ?? false}
       />
+      <button onClick={() => setSelectedPitchId(pitch.id)}>Open</button>
     </li>
   )
 }
