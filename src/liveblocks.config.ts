@@ -60,12 +60,31 @@ type Presence = {
 // Room, even after all users leave. Fields under Storage typically are
 // LiveList, LiveMap, LiveObject instances, for which updates are
 // automatically persisted and synced to all connected clients.
-export type Pitch = { id: string; title: string; archived?: boolean }
+export type Pitch = {
+  id: string
+  title: string
+  archived?: boolean
+}
+export type Scope = {
+  id: string
+  pitchId: string
+  title: string
+  archived?: boolean
+}
+export type Task = {
+  id: string
+  scopeId: string
+  title: string
+  archived?: boolean
+}
+
 export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,
   // ...
   info: LiveObject<{ name: string }>
   pitches: LiveList<LiveObject<Pitch>>
+  scopes: LiveList<LiveObject<Scope>>
+  tasks: LiveList<LiveObject<Task>>
 }
 
 // Optionally, UserMeta represents static/readonly metadata on each user, as

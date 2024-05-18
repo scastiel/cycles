@@ -39,6 +39,8 @@ export function Room({ roomId }: { roomId: string }) {
       initialStorage={{
         info: new LiveObject({ name: 'New board' }),
         pitches: new LiveList(),
+        scopes: new LiveList(),
+        tasks: new LiveList(),
       }}
     >
       <ClientSideSuspense fallback={<div>Loading…</div>}>
