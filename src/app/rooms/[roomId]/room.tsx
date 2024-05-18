@@ -10,13 +10,7 @@ import {
   useStorage,
 } from '../../../liveblocks.config'
 import { LiveList, LiveObject } from '@liveblocks/client'
-import {
-  PropsWithChildren,
-  ReactNode,
-  createContext,
-  useContext,
-  useState,
-} from 'react'
+import { PropsWithChildren, createContext, useContext, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -34,6 +28,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import assert from 'assert'
+import { PitchView } from '@/app/rooms/[roomId]/pitch-view'
+import { StringViewAndEditor } from './string-view-and-editor'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -90,7 +86,7 @@ function SelectedPitchContextProvider({
 function RoomContent() {
   const others = useOthers()
   const self = useSelf()
-  const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
+  const { selectedPitchId } = useSelectedPitchContext()
 
   return (
     <div className="flex flex-1">
@@ -112,9 +108,7 @@ function RoomContent() {
           <ArchivedPitchList />
         </div>
       </div>
-      <div className="flex-1 p-2">
-        <p>Selected pitch ID: {selectedPitchId ?? 'None'}</p>
-      </div>
+      {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
     </div>
   )
 }
@@ -214,16 +208,27 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
       ?.set('title', title)
   }, [])
 
-  const { setSelectedPitchId } = useSelectedPitchContext()
+  const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
 
   return (
     <li className="flex gap-2 items-center">
-      <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle} />
-      <ArchivePitchButton
-        pitchId={pitch.id}
-        archived={pitch.archived ?? false}
-      />
-      <button onClick={() => setSelectedPitchId(pitch.id)}>Open</button>
+      <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle}>
+        {(edit) => (
+          <div className="flex gap-1 items-baseline">
+            <span className={selectedPitchId === pitch.id ? 'font-bold' : ''}>
+              {pitch.title}
+            </span>
+            <button onClick={edit} type="button">
+              Rename
+            </button>
+            <ArchivePitchButton
+              pitchId={pitch.id}
+              archived={pitch.archived ?? false}
+            />
+            <button onClick={() => setSelectedPitchId(pitch.id)}>Open</button>
+          </div>
+        )}
+      </StringViewAndEditor>
     </li>
   )
 }
@@ -271,81 +276,23 @@ function CreatePitchButton({ children }: PropsWithChildren<{}>) {
   )
 }
 
-function StringViewAndEditor({
-  value,
-  updateValue,
-}: {
-  value: string
-  updateValue: (value: string) => void
-}) {
-  const [editMode, setEditMode] = useState(false)
-
-  if (editMode) {
-    return (
-      <BoardNameEditor
-        name={value}
-        updateName={updateValue}
-        cancel={() => setEditMode(false)}
-      />
-    )
-  }
-
-  return (
-    <h2
-      role="button"
-      onClick={() => {
-        setEditMode(true)
-      }}
-      className="hover:bg-slate-50 p-1 rounded border border-transparent"
-    >
-      {value}
-    </h2>
-  )
-}
-
 function BoardName() {
   const name = useStorage((root) => root.info.name)
   const updateName = useMutation(({ storage }, name: string) => {
     storage.get('info').set('name', name)
   }, [])
 
-  return <StringViewAndEditor value={name} updateValue={updateName} />
-}
-
-function BoardNameEditor({
-  name,
-  updateName,
-  cancel,
-}: {
-  name: string
-  updateName: (name: string) => void
-  cancel: () => void
-}) {
-  const [draftName, setDraftName] = useState(name)
-
   return (
-    <form
-      className="flex gap-1"
-      onSubmit={() => {
-        updateName(draftName)
-        cancel()
-      }}
-    >
-      <input
-        className="px-2 py-1 border rounded"
-        value={draftName}
-        onChange={(event) => setDraftName(event.target.value)}
-      />
-      <button className="px-2 py-1 border rounded" type="submit">
-        Save
-      </button>
-      <button
-        type="button"
-        className="px-2 py-1 border rounded"
-        onClick={() => cancel()}
-      >
-        Cancel
-      </button>
-    </form>
+    <StringViewAndEditor value={name} updateValue={updateName}>
+      {(edit) => (
+        <h2
+          role="button"
+          onClick={edit}
+          className="hover:bg-slate-50 p-1 rounded border border-transparent"
+        >
+          {name}
+        </h2>
+      )}
+    </StringViewAndEditor>
   )
 }
