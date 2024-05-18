@@ -49,14 +49,8 @@ function StringEditor({
         onChange={(event) => setDraftName(event.target.value)}
         autoFocus
       />
-      <button className="px-2 py-1 border rounded" type="submit">
-        Save
-      </button>
-      <button
-        type="button"
-        className="px-2 py-1 border rounded"
-        onClick={() => cancel()}
-      >
+      <button type="submit">Save</button>
+      <button type="button" onClick={() => cancel()}>
         Cancel
       </button>
     </form>

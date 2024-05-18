@@ -250,11 +250,7 @@ function ArchivePitchButton({
   }, [])
 
   return (
-    <button
-      className="px-2 py-1 border rounded"
-      type="button"
-      onClick={archivePitch}
-    >
+    <button type="button" onClick={archivePitch}>
       {archived ? 'Restore' : 'Archive'}
     </button>
   )
@@ -268,11 +264,7 @@ function CreatePitchButton({ children }: PropsWithChildren<{}>) {
   }, [])
 
   return (
-    <button
-      className="px-2 py-1 border rounded"
-      type="button"
-      onClick={createPitch}
-    >
+    <button type="button" onClick={createPitch}>
       {children}
     </button>
   )
