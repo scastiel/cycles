@@ -48,14 +48,20 @@ function RoomContent() {
         </div>
         <PitchList />
       </div>
+      <div className="p-2 border-t">
+        <h3>Archived pitches</h3>
+        <ArchivedPitchList />
+      </div>
     </>
   )
 }
 
 function PitchList() {
-  const pitches = useStorage((root) => root.pitches)
+  const pitches = useStorage((root) =>
+    root.pitches.filter((pitch) => !pitch.archived)
+  )
   return pitches.length > 0 ? (
-    <ul>
+    <ul className="flex flex-col gap-1">
       {pitches.map((pitch) => (
         <PitchListItem key={pitch.id} pitch={pitch} />
       ))}
@@ -70,6 +76,21 @@ function PitchList() {
   )
 }
 
+function ArchivedPitchList() {
+  const pitches = useStorage((root) =>
+    root.pitches.filter((pitch) => pitch.archived)
+  )
+  return pitches.length > 0 ? (
+    <ul className="flex flex-col gap-1">
+      {pitches.map((pitch) => (
+        <PitchListItem key={pitch.id} pitch={pitch} />
+      ))}
+    </ul>
+  ) : (
+    <p>No archived pitch yet.</p>
+  )
+}
+
 function PitchListItem({ pitch }: { pitch: Pitch }) {
   const updatePitchTitle = useMutation(({ storage }, title: string) => {
     storage
@@ -79,9 +100,35 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
   }, [])
 
   return (
-    <li>
+    <li className="flex gap-2 items-center">
       <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle} />
+      <ArchivePitchButton pitchId={pitch.id} archived={pitch.archived ?? false}>
+        Archive
+      </ArchivePitchButton>
     </li>
+  )
+}
+
+function ArchivePitchButton({
+  pitchId,
+  archived,
+  children,
+}: PropsWithChildren<{ pitchId: string; archived: boolean }>) {
+  const archivePitch = useMutation(({ storage }) => {
+    storage
+      .get('pitches')
+      .find((pitch) => pitch.get('id') === pitchId)
+      ?.set('archived', !archived)
+  }, [])
+
+  return (
+    <button
+      className="px-2 py-1 border rounded"
+      type="button"
+      onClick={archivePitch}
+    >
+      {archived ? 'Restore' : 'Archive'}
+    </button>
   )
 }
 
