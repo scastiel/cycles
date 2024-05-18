@@ -1,21 +1,27 @@
 'use client'
 import { ClientSideSuspense } from '@liveblocks/react'
 import {
+  Pitch,
   RoomProvider,
+  Storage,
   useMutation,
   useOthers,
   useSelf,
   useStorage,
 } from '../../../liveblocks.config'
-import { LiveObject } from '@liveblocks/client'
-import { useState } from 'react'
+import { LiveList, LiveObject } from '@liveblocks/client'
+import { PropsWithChildren, ReactNode, useState } from 'react'
+import { nanoid } from 'nanoid'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
     <RoomProvider
       id={decodeURIComponent(roomId)}
       initialPresence={{}}
-      initialStorage={{ info: new LiveObject({ name: 'New board' }) }}
+      initialStorage={{
+        info: new LiveObject({ name: 'New board' }),
+        pitches: new LiveList(),
+      }}
     >
       <ClientSideSuspense fallback={<div>Loading…</div>}>
         {() => <RoomContent />}
@@ -28,12 +34,6 @@ function RoomContent() {
   const others = useOthers()
   const self = useSelf()
 
-  const info = useStorage((root) => root.info)
-
-  const updateName = useMutation(({ storage }, name: string) => {
-    storage.get('info').set('name', name)
-  }, [])
-
   return (
     <>
       <div className="p-2">
@@ -43,26 +43,80 @@ function RoomContent() {
         </p>
       </div>
       <div className="p-2 border-t">
-        <BoardName name={info.name} updateName={updateName} />
+        <div className="flex gap-2 items-baseline">
+          <span>Board name:</span> <BoardName />
+        </div>
+        <PitchList />
       </div>
     </>
   )
 }
 
-function BoardName({
-  name,
-  updateName,
+function PitchList() {
+  const pitches = useStorage((root) => root.pitches)
+  return pitches.length > 0 ? (
+    <ul>
+      {pitches.map((pitch) => (
+        <PitchListItem key={pitch.id} pitch={pitch} />
+      ))}
+      <li>
+        <CreatePitchButton>Create new</CreatePitchButton>
+      </li>
+    </ul>
+  ) : (
+    <p>
+      No pitch yet. <CreatePitchButton>Create the first one</CreatePitchButton>
+    </p>
+  )
+}
+
+function PitchListItem({ pitch }: { pitch: Pitch }) {
+  const updatePitchTitle = useMutation(({ storage }, title: string) => {
+    storage
+      .get('pitches')
+      .find((p) => p.get('id') === pitch.id)
+      ?.set('title', title)
+  }, [])
+
+  return (
+    <li>
+      <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle} />
+    </li>
+  )
+}
+
+function CreatePitchButton({ children }: PropsWithChildren<{}>) {
+  const createPitch = useMutation(({ storage }) => {
+    storage
+      .get('pitches')
+      .push(new LiveObject({ id: nanoid(), title: 'New pitch' }))
+  }, [])
+
+  return (
+    <button
+      className="px-2 py-1 border rounded"
+      type="button"
+      onClick={createPitch}
+    >
+      {children}
+    </button>
+  )
+}
+
+function StringViewAndEditor({
+  value,
+  updateValue,
 }: {
-  name: string
-  updateName: (name: string) => void
+  value: string
+  updateValue: (value: string) => void
 }) {
   const [editMode, setEditMode] = useState(false)
 
   if (editMode) {
     return (
       <BoardNameEditor
-        name={name}
-        updateName={updateName}
+        name={value}
+        updateName={updateValue}
         cancel={() => setEditMode(false)}
       />
     )
@@ -76,9 +130,18 @@ function BoardName({
       }}
       className="hover:bg-slate-50 p-1 rounded border border-transparent"
     >
-      {name}
+      {value}
     </h2>
   )
+}
+
+function BoardName() {
+  const name = useStorage((root) => root.info.name)
+  const updateName = useMutation(({ storage }, name: string) => {
+    storage.get('info').set('name', name)
+  }, [])
+
+  return <StringViewAndEditor value={name} updateValue={updateName} />
 }
 
 function BoardNameEditor({

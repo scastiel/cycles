@@ -1,5 +1,5 @@
 import { env } from '@/env'
-import { LiveObject, createClient } from '@liveblocks/client'
+import { LiveList, LiveObject, createClient } from '@liveblocks/client'
 import { createRoomContext, createLiveblocksContext } from '@liveblocks/react'
 
 const client = createClient({
@@ -60,10 +60,12 @@ type Presence = {
 // Room, even after all users leave. Fields under Storage typically are
 // LiveList, LiveMap, LiveObject instances, for which updates are
 // automatically persisted and synced to all connected clients.
-type Storage = {
+export type Pitch = { id: string; title: string }
+export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,
   // ...
   info: LiveObject<{ name: string }>
+  pitches: LiveList<LiveObject<{ id: string; title: string }>>
 }
 
 // Optionally, UserMeta represents static/readonly metadata on each user, as
