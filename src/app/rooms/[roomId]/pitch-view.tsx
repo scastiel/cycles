@@ -143,17 +143,28 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
         collisionDetection={closestCenter}
         onDragEnd={(event) => {
           const { active, over } = event
-          if ((over?.id as string | undefined)?.includes('/')) {
-            const taskId = event.active.id as string
-            const [scopeId, status] = (event.over?.id as string)?.split(
-              '/'
-            ) as [string, TaskStatus | undefined]
-            if (status) {
-              updateTaskStatus(taskId, scopeId, status)
+
+          switch (over?.data.current?.type) {
+            case 'scope-status': {
+              if (active.data.current?.type === 'task') {
+                const taskId = active.id as string
+                const { scopeId, status } = over.data.current as {
+                  scopeId: string
+                  status: TaskStatus
+                }
+                updateTaskStatus(taskId, scopeId, status)
+              }
+              break
             }
-          }
-          if (over && active.id !== over.id) {
-            moveScope(String(active.id), String(over.id))
+            case 'scope': {
+              if (
+                active.data.current?.type === 'scope' &&
+                over &&
+                active.id !== over.id
+              ) {
+                moveScope(String(active.id), String(over.id))
+              }
+            }
           }
         }}
       >
@@ -200,7 +211,13 @@ const useRestoreScopeMutation = createUseChangeScopeArchivedMutation(false)
 
 function SortableScopeView({ scope }: { scope: Scope }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: scope.id })
+    useSortable({
+      id: scope.id,
+      data: {
+        type: 'scope',
+        scopeId: scope.id,
+      },
+    })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -315,17 +332,24 @@ function ScopeStatusTaskList({
   const gap = 8
   const width = taskWidth * colCount + gap * (colCount - 1)
 
-  const { isOver, setNodeRef } = useDroppable({
+  const { isOver, active, setNodeRef } = useDroppable({
     id: `${scopeId}/${status}`,
+    data: {
+      type: 'scope-status',
+      scopeId,
+      status,
+    },
   })
-  const droppableHoverClass = isOver
-    ? 'border border-2 border-dashed'
-    : 'border border-2 border-transparent'
+  const accepts = active?.data.current?.type === 'task'
+  const droppableHoverClass1 = accepts
+    ? 'border-slate-200'
+    : 'border-transparent'
+  const droppableHoverClass2 = accepts && isOver ? 'border-slate-500' : ''
 
   return (
     <div
       ref={setNodeRef}
-      className={`grid ${droppableHoverClass}`}
+      className={`grid border-2 border-dashed ${droppableHoverClass1} ${droppableHoverClass2}`}
       style={{
         width,
         gap,
@@ -392,6 +416,10 @@ function TaskView({ task }: { task: Task }) {
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
+    data: {
+      type: 'task',
+      taskId: task.id,
+    },
   })
   const style = transform
     ? {
@@ -402,7 +430,7 @@ function TaskView({ task }: { task: Task }) {
   return (
     <div>
       <div
-        className="border rounded p-2 text-sm"
+        className="border rounded p-2 text-sm bg-white"
         ref={setNodeRef}
         style={style}
       >
