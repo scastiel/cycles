@@ -1,5 +1,4 @@
-import { StringViewAndEditor } from '@/app/rooms/[roomId]/string-view-and-editor'
-import { Scope, useMutation, useStorage } from '@/liveblocks.config'
+import { Scope, Task, useMutation, useStorage } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
@@ -18,6 +17,8 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
+import { ReactNode, useState } from 'react'
+import { StringViewAndEditor } from './string-view-and-editor'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -62,25 +63,25 @@ function ActiveScopeList({ pitchId }: { pitchId: string }) {
 
   return (
     <div>
-      <ul>
+      <div className="flex flex-col gap-2">
         {scopes.length > 0 ? (
           <>
             <ScopeList scopes={scopes} />
-            <li>
+            <div>
               <button type="button" onClick={createScope}>
                 Create new
               </button>
-            </li>
+            </div>
           </>
         ) : (
-          <li>
+          <div>
             No scope yet.{' '}
             <button type="button" onClick={createScope}>
               Create the first one
             </button>
-          </li>
+          </div>
         )}
-      </ul>
+      </div>
       <h3>Archived scopes</h3>
       <ArchivedScopeList pitchId={pitchId} />
     </div>
@@ -208,19 +209,151 @@ function ScopeView({ scope }: { scope: Scope }) {
   const restoreScope = useRestoreScopeMutation(scope.id)
 
   return (
-    <li>
-      <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
-        {(edit) => (
-          <>
-            {scope.title} <button onClick={edit}>Rename</button>{' '}
-            {scope.archived ? (
-              <button onClick={restoreScope}>Restore</button>
-            ) : (
-              <button onClick={archiveScope}>Archive</button>
-            )}
-          </>
+    <div className="flex-1 flex flex-col gap-2">
+      <div className="flex items-baseline gap-1">
+        <TaskTitleViewAndEditor value={scope.title} updateValue={updateTitle}>
+          {(edit) => (
+            <>
+              {scope.title} <button onClick={edit}>Rename</button>
+            </>
+          )}
+        </TaskTitleViewAndEditor>
+        {scope.archived ? (
+          <button onClick={restoreScope}>Restore</button>
+        ) : (
+          <button onClick={archiveScope}>Archive</button>
         )}
-      </StringViewAndEditor>
-    </li>
+      </div>
+      <ScopeTasksList scopeId={scope.id} />
+    </div>
+  )
+}
+
+function ScopeTasksList({ scopeId }: { scopeId: string }) {
+  const tasks = useStorage((root) =>
+    root.tasks.filter((task) => task.scopeId === scopeId && !task.archived)
+  )
+  const createTask = useCreateTaskMutation(scopeId)
+
+  return (
+    <div className="grid grid-cols-8 gap-2 w-full text-sm">
+      {tasks.map((task) => (
+        <TaskView key={task.id} task={task} />
+      ))}
+      <div className="border rounded p-2">
+        <button onClick={createTask}>Create</button>
+      </div>
+    </div>
+  )
+}
+
+function useCreateTaskMutation(scopeId: string) {
+  return useMutation(
+    ({ storage }) => {
+      storage.get('tasks').push(
+        new LiveObject({
+          id: nanoid(),
+          title: 'New task',
+          scopeId,
+        })
+      )
+    },
+    [scopeId]
+  )
+}
+
+function TaskView({ task }: { task: Task }) {
+  const updateTaskTitle = useMutation(
+    ({ storage }, title: string) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+        ?.set('title', title)
+    },
+    [task.id]
+  )
+  const archiveTask = useMutation(
+    ({ storage }) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+        ?.set('archived', true)
+    },
+    [task.id]
+  )
+
+  return (
+    <div className="border rounded p-2">
+      <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
+        {(edit) => (
+          <div>
+            {task.title}{' '}
+            <div className="flex gap-1">
+              <button onClick={edit}>Edit</button>
+              <button onClick={archiveTask}>Delete</button>
+            </div>
+          </div>
+        )}
+      </TaskTitleViewAndEditor>
+    </div>
+  )
+}
+
+function TaskTitleViewAndEditor({
+  value,
+  updateValue,
+  children,
+}: {
+  value: string
+  updateValue: (value: string) => void
+  children?: (edit: () => void) => ReactNode
+}) {
+  const [editMode, setEditMode] = useState(false)
+
+  if (editMode) {
+    return (
+      <TaskTitleEditor
+        value={value}
+        updateValue={updateValue}
+        cancel={() => setEditMode(false)}
+      />
+    )
+  }
+
+  return children?.(() => setEditMode(true))
+}
+
+function TaskTitleEditor({
+  value,
+  updateValue,
+  cancel,
+}: {
+  value: string
+  updateValue: (name: string) => void
+  cancel: () => void
+}) {
+  const [draftName, setDraftName] = useState(value)
+
+  return (
+    <form
+      className="flex flex-col gap-1"
+      onSubmit={() => {
+        updateValue(draftName)
+        cancel()
+      }}
+    >
+      <textarea
+        className="px-2 py-1 border rounded"
+        value={draftName}
+        onChange={(event) => setDraftName(event.target.value)}
+        autoFocus
+      />
+      <div className="flex justify-center gap-1">
+        <button type="submit">Save</button>
+        <button type="button" onClick={() => cancel()}>
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }
