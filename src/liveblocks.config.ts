@@ -76,7 +76,9 @@ export type Task = {
   scopeId: string
   title: string
   archived?: boolean
+  status: TaskStatus
 }
+export type TaskStatus = 'todo' | 'in_progress' | 'done'
 
 export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,

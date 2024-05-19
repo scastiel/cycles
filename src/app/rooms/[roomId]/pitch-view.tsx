@@ -1,4 +1,10 @@
-import { Scope, Task, useMutation, useStorage } from '@/liveblocks.config'
+import {
+  Scope,
+  Task,
+  TaskStatus,
+  useMutation,
+  useStorage,
+} from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
@@ -17,8 +23,9 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { ReactNode, useState } from 'react'
+import { PropsWithChildren, ReactNode, useState } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
+import { match } from 'ts-pattern'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -211,13 +218,13 @@ function ScopeView({ scope }: { scope: Scope }) {
   return (
     <div className="flex-1 flex flex-col gap-2">
       <div className="flex items-baseline gap-1">
-        <TaskTitleViewAndEditor value={scope.title} updateValue={updateTitle}>
+        <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
           {(edit) => (
             <>
               {scope.title} <button onClick={edit}>Rename</button>
             </>
           )}
-        </TaskTitleViewAndEditor>
+        </StringViewAndEditor>
         {scope.archived ? (
           <button onClick={restoreScope}>Restore</button>
         ) : (
@@ -236,13 +243,53 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const createTask = useCreateTaskMutation(scopeId)
 
   return (
-    <div className="grid grid-cols-8 gap-2 w-full text-sm">
-      {tasks.map((task) => (
-        <TaskView key={task.id} task={task} />
-      ))}
-      <div className="border rounded p-2">
-        <button onClick={createTask}>Create</button>
-      </div>
+    <div className="flex gap-2">
+      <ScopeStatusTaskList colCount={3}>
+        {tasks
+          .filter((t) => t.status === 'todo')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+        <div className="border rounded p-2">
+          <button onClick={createTask}>Create</button>
+        </div>
+      </ScopeStatusTaskList>
+      <ScopeStatusTaskList colCount={2}>
+        {tasks
+          .filter((t) => t.status === 'in_progress')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+      </ScopeStatusTaskList>
+      <ScopeStatusTaskList colCount={3}>
+        {tasks
+          .filter((t) => t.status === 'done')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+      </ScopeStatusTaskList>
+    </div>
+  )
+}
+
+function ScopeStatusTaskList({
+  children,
+  colCount,
+}: PropsWithChildren<{ colCount: number }>) {
+  const taskWidth = 120
+  const gap = 8
+  const width = taskWidth * colCount + gap * (colCount - 1)
+
+  return (
+    <div
+      className="grid"
+      style={{
+        width,
+        gap,
+        gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+      }}
+    >
+      {children}
     </div>
   )
 }
@@ -255,6 +302,7 @@ function useCreateTaskMutation(scopeId: string) {
           id: nanoid(),
           title: 'New task',
           scopeId,
+          status: 'todo',
         })
       )
     },
@@ -281,16 +329,37 @@ function TaskView({ task }: { task: Task }) {
     },
     [task.id]
   )
+  const updateTaskStatus = useMutation(
+    ({ storage }, status: TaskStatus) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+        ?.set('status', status)
+    },
+    [task.id]
+  )
 
   return (
     <div className="border rounded p-2">
       <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
         {(edit) => (
-          <div>
-            {task.title}{' '}
+          <div className="flex flex-col gap-1">
+            <div>{task.title}</div>
             <div className="flex gap-1">
               <button onClick={edit}>Edit</button>
               <button onClick={archiveTask}>Delete</button>
+            </div>
+            <div>
+              <select
+                value={task.status}
+                onChange={(event) =>
+                  updateTaskStatus(event.target.value as TaskStatus)
+                }
+              >
+                <option value="todo">To do</option>
+                <option value="in_progress">In progress</option>
+                <option value="done">Done</option>
+              </select>
             </div>
           </div>
         )}
