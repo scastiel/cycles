@@ -125,12 +125,16 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
         const getScopeIndex = (id: string) =>
           storage.get('scopes').findIndex((pitch) => pitch.get('id') === id)
         const activeIndex = getScopeIndex(activeId)
-        const overIndex = getScopeIndex(overId)
-        storage.get('scopes').move(activeIndex, overIndex)
+        if (activeIndex !== -1) {
+          const overIndex = getScopeIndex(overId)
+          storage.get('scopes').move(activeIndex, overIndex)
+        }
       }
     },
     []
   )
+
+  const updateTaskStatus = useUpdateTaskStatus()
 
   return (
     <>
@@ -139,6 +143,15 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
         collisionDetection={closestCenter}
         onDragEnd={(event) => {
           const { active, over } = event
+          if ((over?.id as string | undefined)?.includes('/')) {
+            const taskId = event.active.id as string
+            const [scopeId, status] = (event.over?.id as string)?.split(
+              '/'
+            ) as [string, TaskStatus | undefined]
+            if (status) {
+              updateTaskStatus(taskId, scopeId, status)
+            }
+          }
           if (over && active.id !== over.id) {
             moveScope(String(active.id), String(over.id))
           }
@@ -244,58 +257,66 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const updateTaskStatus = useUpdateTaskStatus()
 
   return (
-    <DndContext
-      onDragEnd={(event) => {
-        const taskId = event.active.id as string
-        const status = event.over?.id as TaskStatus | undefined
-        if (status) {
-          updateTaskStatus(taskId, status)
-        }
-      }}
-    >
-      <div className="flex gap-2">
-        <ScopeStatusTaskList colCount={3} status="todo">
-          {tasks
-            .filter((t) => t.status === 'todo')
-            .map((task) => (
-              <TaskView key={task.id} task={task} />
-            ))}
-          <div>
-            <div className="border rounded p-2">
-              <button onClick={createTask}>Create</button>
-            </div>
+    // <DndContext
+    //   onDragEnd={(event) => {
+    //     const taskId = event.active.id as string
+    //     const [scopeId, status] = (event.over?.id as string)?.split('/') as [
+    //       string,
+    //       TaskStatus | undefined
+    //     ]
+    //     if (status) {
+    //       updateTaskStatus(taskId, scopeId, status)
+    //     }
+    //   }}
+    // >
+    <div className="flex gap-2">
+      <ScopeStatusTaskList colCount={3} scopeId={scopeId} status="todo">
+        {tasks
+          .filter((t) => t.status === 'todo')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+        <div>
+          <div className="border rounded p-2">
+            <button onClick={createTask}>Create</button>
           </div>
-        </ScopeStatusTaskList>
-        <ScopeStatusTaskList colCount={2} status="in_progress">
-          {tasks
-            .filter((t) => t.status === 'in_progress')
-            .map((task) => (
-              <TaskView key={task.id} task={task} />
-            ))}
-        </ScopeStatusTaskList>
-        <ScopeStatusTaskList colCount={3} status="done">
-          {tasks
-            .filter((t) => t.status === 'done')
-            .map((task) => (
-              <TaskView key={task.id} task={task} />
-            ))}
-        </ScopeStatusTaskList>
-      </div>
-    </DndContext>
+        </div>
+      </ScopeStatusTaskList>
+      <ScopeStatusTaskList colCount={2} scopeId={scopeId} status="in_progress">
+        {tasks
+          .filter((t) => t.status === 'in_progress')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+      </ScopeStatusTaskList>
+      <ScopeStatusTaskList colCount={3} scopeId={scopeId} status="done">
+        {tasks
+          .filter((t) => t.status === 'done')
+          .map((task) => (
+            <TaskView key={task.id} task={task} />
+          ))}
+      </ScopeStatusTaskList>
+    </div>
+    // </DndContext>
   )
 }
 
 function ScopeStatusTaskList({
   children,
   colCount,
+  scopeId,
   status,
-}: PropsWithChildren<{ colCount: number; status: TaskStatus }>) {
+}: PropsWithChildren<{
+  colCount: number
+  scopeId: string
+  status: TaskStatus
+}>) {
   const taskWidth = 120
   const gap = 8
   const width = taskWidth * colCount + gap * (colCount - 1)
 
   const { isOver, setNodeRef } = useDroppable({
-    id: status,
+    id: `${scopeId}/${status}`,
   })
   const droppableHoverClass = isOver
     ? 'border border-2 border-dashed'
@@ -333,17 +354,20 @@ function useCreateTaskMutation(scopeId: string) {
 }
 
 function useUpdateTaskStatus() {
-  return useMutation(({ storage }, taskId: string, status: TaskStatus) => {
-    storage
-      .get('tasks')
-      .find((t) => t.get('id') === taskId)
-      ?.set('status', status)
-    const taskIndex = storage
-      .get('tasks')
-      .findIndex((t) => t.get('id') === taskId)
-    const newTaskIndex = storage.get('tasks').length - 1
-    storage.get('tasks').move(taskIndex, newTaskIndex)
-  }, [])
+  return useMutation(
+    ({ storage }, taskId: string, scopeId: string, status: TaskStatus) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === taskId)
+        ?.update({ status, scopeId })
+      const taskIndex = storage
+        .get('tasks')
+        .findIndex((t) => t.get('id') === taskId)
+      const newTaskIndex = storage.get('tasks').length - 1
+      storage.get('tasks').move(taskIndex, newTaskIndex)
+    },
+    []
+  )
 }
 
 function TaskView({ task }: { task: Task }) {
