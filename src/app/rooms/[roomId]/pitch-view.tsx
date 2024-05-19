@@ -25,7 +25,7 @@ import {
 } from '@dnd-kit/sortable'
 import { PropsWithChildren, ReactNode, useState } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
-import { match } from 'ts-pattern'
+import { useDroppable, useDraggable } from '@dnd-kit/core'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -241,48 +241,70 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
     root.tasks.filter((task) => task.scopeId === scopeId && !task.archived)
   )
   const createTask = useCreateTaskMutation(scopeId)
+  const updateTaskStatus = useUpdateTaskStatus()
 
   return (
-    <div className="flex gap-2">
-      <ScopeStatusTaskList colCount={3}>
-        {tasks
-          .filter((t) => t.status === 'todo')
-          .map((task) => (
-            <TaskView key={task.id} task={task} />
-          ))}
-        <div className="border rounded p-2">
-          <button onClick={createTask}>Create</button>
-        </div>
-      </ScopeStatusTaskList>
-      <ScopeStatusTaskList colCount={2}>
-        {tasks
-          .filter((t) => t.status === 'in_progress')
-          .map((task) => (
-            <TaskView key={task.id} task={task} />
-          ))}
-      </ScopeStatusTaskList>
-      <ScopeStatusTaskList colCount={3}>
-        {tasks
-          .filter((t) => t.status === 'done')
-          .map((task) => (
-            <TaskView key={task.id} task={task} />
-          ))}
-      </ScopeStatusTaskList>
-    </div>
+    <DndContext
+      onDragEnd={(event) => {
+        const taskId = event.active.id as string
+        const status = event.over?.id as TaskStatus | undefined
+        if (status) {
+          updateTaskStatus(taskId, status)
+        }
+      }}
+    >
+      <div className="flex gap-2">
+        <ScopeStatusTaskList colCount={3} status="todo">
+          {tasks
+            .filter((t) => t.status === 'todo')
+            .map((task) => (
+              <TaskView key={task.id} task={task} />
+            ))}
+          <div>
+            <div className="border rounded p-2">
+              <button onClick={createTask}>Create</button>
+            </div>
+          </div>
+        </ScopeStatusTaskList>
+        <ScopeStatusTaskList colCount={2} status="in_progress">
+          {tasks
+            .filter((t) => t.status === 'in_progress')
+            .map((task) => (
+              <TaskView key={task.id} task={task} />
+            ))}
+        </ScopeStatusTaskList>
+        <ScopeStatusTaskList colCount={3} status="done">
+          {tasks
+            .filter((t) => t.status === 'done')
+            .map((task) => (
+              <TaskView key={task.id} task={task} />
+            ))}
+        </ScopeStatusTaskList>
+      </div>
+    </DndContext>
   )
 }
 
 function ScopeStatusTaskList({
   children,
   colCount,
-}: PropsWithChildren<{ colCount: number }>) {
+  status,
+}: PropsWithChildren<{ colCount: number; status: TaskStatus }>) {
   const taskWidth = 120
   const gap = 8
   const width = taskWidth * colCount + gap * (colCount - 1)
 
+  const { isOver, setNodeRef } = useDroppable({
+    id: status,
+  })
+  const droppableHoverClass = isOver
+    ? 'border border-2 border-dashed'
+    : 'border border-2 border-transparent'
+
   return (
     <div
-      className="grid"
+      ref={setNodeRef}
+      className={`grid ${droppableHoverClass}`}
       style={{
         width,
         gap,
@@ -310,6 +332,20 @@ function useCreateTaskMutation(scopeId: string) {
   )
 }
 
+function useUpdateTaskStatus() {
+  return useMutation(({ storage }, taskId: string, status: TaskStatus) => {
+    storage
+      .get('tasks')
+      .find((t) => t.get('id') === taskId)
+      ?.set('status', status)
+    const taskIndex = storage
+      .get('tasks')
+      .findIndex((t) => t.get('id') === taskId)
+    const newTaskIndex = storage.get('tasks').length - 1
+    storage.get('tasks').move(taskIndex, newTaskIndex)
+  }, [])
+}
+
 function TaskView({ task }: { task: Task }) {
   const updateTaskTitle = useMutation(
     ({ storage }, title: string) => {
@@ -329,41 +365,43 @@ function TaskView({ task }: { task: Task }) {
     },
     [task.id]
   )
-  const updateTaskStatus = useMutation(
-    ({ storage }, status: TaskStatus) => {
-      storage
-        .get('tasks')
-        .find((t) => t.get('id') === task.id)
-        ?.set('status', status)
-    },
-    [task.id]
-  )
+
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: task.id,
+  })
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined
 
   return (
-    <div className="border rounded p-2">
-      <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
-        {(edit) => (
-          <div className="flex flex-col gap-1">
-            <div>{task.title}</div>
-            <div className="flex gap-1">
-              <button onClick={edit}>Edit</button>
-              <button onClick={archiveTask}>Delete</button>
+    <div>
+      <div
+        className="border rounded p-2 text-sm"
+        ref={setNodeRef}
+        style={style}
+      >
+        <TaskTitleViewAndEditor
+          value={task.title}
+          updateValue={updateTaskTitle}
+        >
+          {(edit) => (
+            <div className="flex flex-col gap-1">
+              <div>
+                <span {...listeners} {...attributes}>
+                  ...
+                </span>
+                {task.title}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={edit}>Edit</button>
+                <button onClick={archiveTask}>Delete</button>
+              </div>
             </div>
-            <div>
-              <select
-                value={task.status}
-                onChange={(event) =>
-                  updateTaskStatus(event.target.value as TaskStatus)
-                }
-              >
-                <option value="todo">To do</option>
-                <option value="in_progress">In progress</option>
-                <option value="done">Done</option>
-              </select>
-            </div>
-          </div>
-        )}
-      </TaskTitleViewAndEditor>
+          )}
+        </TaskTitleViewAndEditor>
+      </div>
     </div>
   )
 }
