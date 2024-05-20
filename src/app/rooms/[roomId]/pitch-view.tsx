@@ -428,7 +428,7 @@ function ScopeStatusTaskList({
           .exhaustive()}
       </div>
       <div
-        className="grid"
+        className="grid items-start"
         style={{
           gap,
           gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
@@ -449,6 +449,7 @@ function useCreateTaskMutation(scopeId: string) {
           title: 'New task',
           scopeId,
           status: 'todo',
+          type: 'task',
         })
       )
     },

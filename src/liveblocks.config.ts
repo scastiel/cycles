@@ -77,8 +77,10 @@ export type Task = {
   title: string
   archived?: boolean
   status: TaskStatus
+  type?: TaskType
 }
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
+export type TaskType = 'task' | 'optional' | 'bug'
 
 export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,
