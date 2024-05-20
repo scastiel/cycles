@@ -26,6 +26,14 @@ import {
 import { PropsWithChildren, ReactNode, useState } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Ellipsis } from 'lucide-react'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -42,20 +50,27 @@ export function PitchView({ pitchId }: { pitchId: string }) {
 
   return (
     <div className="flex-1 p-2">
-      <h2 className="flex items-baseline gap-2">
-        Pitch title:
+      <div className="flex items-baseline gap-2">
         <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
           {(edit) => (
-            <span
-              role="button"
-              onClick={edit}
-              className="hover:bg-slate-50 p-1 rounded border border-transparent"
-            >
-              {pitch.title}
-            </span>
+            <div className="flex items-center gap-4">
+              <h2 className="font-bold">{pitch.title}</h2>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost">
+                    <Ellipsis className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={edit}>
+                    Rename pitch
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </StringViewAndEditor>
-      </h2>
+      </div>
 
       <ActiveScopeList pitchId={pitchId} />
     </div>

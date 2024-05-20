@@ -39,7 +39,7 @@ function StringEditor({
 
   return (
     <form
-      className="flex gap-2"
+      className="flex gap-2 z-10"
       onSubmit={() => {
         updateValue(draftName)
         cancel()
