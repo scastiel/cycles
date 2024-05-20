@@ -279,7 +279,7 @@ const ScopeView = forwardRef<
   const restoreScope = useRestoreScopeMutation(scope.id)
   const createTask = useCreateTaskMutation(scope.id)
 
-  const [isOpen, setIsOpen] = useState(scope.archived === false)
+  const [isOpen, setIsOpen] = useState(!scope.archived)
 
   return (
     <div
@@ -287,10 +287,7 @@ const ScopeView = forwardRef<
       style={style}
       ref={forwardedRef}
     >
-      <Collapsible
-        defaultOpen={scope.archived === false}
-        onOpenChange={setIsOpen}
-      >
+      <Collapsible defaultOpen={!scope.archived} onOpenChange={setIsOpen}>
         <div className="sticky w-fit left-0 flex items-center gap-4">
           <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
             {(edit) => (
