@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { TaskView } from './task-view'
+import { match } from 'ts-pattern'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -126,7 +127,7 @@ function ArchivedScopeList({ pitchId }: { pitchId: string }) {
   )
 
   return scopes.length > 0 ? (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col">
       {scopes.map((scope) => (
         <ScopeView key={scope.id} scope={scope} />
       ))}
@@ -413,15 +414,28 @@ function ScopeStatusTaskList({
   return (
     <div
       ref={setNodeRef}
-      className={`grid border-2 border-dashed bg-slate-50 ${droppableHoverClass1} ${droppableHoverClass2}`}
+      className={`flex flex-col gap-2 border-2 border-dashed bg-slate-50 ${droppableHoverClass1} ${droppableHoverClass2}`}
       style={{
         padding,
         width,
-        gap,
-        gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
       }}
     >
-      {children}
+      <div className="text-xs uppercase text-muted-foreground -m-1">
+        {match(status)
+          .with('todo', () => 'To do')
+          .with('in_progress', () => 'In progress')
+          .with('done', () => 'Done')
+          .exhaustive()}
+      </div>
+      <div
+        className="grid"
+        style={{
+          gap,
+          gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+        }}
+      >
+        {children}
+      </div>
     </div>
   )
 }

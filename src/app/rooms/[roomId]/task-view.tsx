@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 export function TaskView({ task }: { task: Task }) {
   const updateTaskTitle = useMutation(
@@ -68,7 +69,7 @@ export function TaskView({ task }: { task: Task }) {
       </div>
       <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
         {(edit) => (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 hover:bg-slate-50">
             <div role="button" onClick={edit} className="text-sm">
               {task.title}
             </div>
@@ -115,23 +116,30 @@ function TaskTitleEditor({
 
   return (
     <form
-      className="flex flex-col gap-1"
+      className="flex flex-col gap-2"
       onSubmit={() => {
         updateValue(draftName)
         cancel()
       }}
     >
-      <textarea
+      <Textarea
         className="px-2 py-1 border rounded"
         value={draftName}
         onChange={(event) => setDraftName(event.target.value)}
         autoFocus
       />
       <div className="flex justify-center gap-1">
-        <button type="submit">Save</button>
-        <button type="button" onClick={() => cancel()}>
+        <Button size="sm" type="submit">
+          Save
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          type="button"
+          onClick={() => cancel()}
+        >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )
