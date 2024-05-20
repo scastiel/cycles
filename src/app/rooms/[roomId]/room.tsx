@@ -10,7 +10,15 @@ import {
   useStorage,
 } from '../../../liveblocks.config'
 import { LiveList, LiveObject } from '@liveblocks/client'
-import { PropsWithChildren, createContext, useContext, useState } from 'react'
+import {
+  CSSProperties,
+  PropsWithChildren,
+  ReactNode,
+  createContext,
+  forwardRef,
+  useContext,
+  useState,
+} from 'react'
 import { nanoid } from 'nanoid'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -30,6 +38,34 @@ import {
 import assert from 'assert'
 import { PitchView } from '@/app/rooms/[roomId]/pitch-view'
 import { StringViewAndEditor } from './string-view-and-editor'
+import { Button } from '@/components/ui/button'
+import {
+  ChevronRight,
+  Dot,
+  Ellipsis,
+  GripVertical,
+  Menu,
+  PlusIcon,
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -86,32 +122,63 @@ function SelectedPitchContextProvider({
 }
 
 function RoomContent() {
-  const others = useOthers()
-  const self = useSelf()
   const { selectedPitchId } = useSelectedPitchContext()
 
   return (
-    <div className="flex flex-1">
-      <div className="flex-grow-0 flex-shrink-0 border-r">
-        <div className="p-2">
-          <p>There are {others.length} other user(s) online.</p>
-          <p>
-            You are: <strong>{self.info.fullName}</strong>
-          </p>
+    <ResizablePanelGroup direction="horizontal" className="flex flex-1">
+      <ResizablePanel defaultSize={25}>
+        <SidePanel />
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel defaultSize={75}>
+        {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  )
+}
+
+function SidePanel() {
+  const others = useOthers()
+
+  return (
+    <div className="min-h-full flex flex-col">
+      <div className="flex-1 p-2 flex flex-col gap-2">
+        <div className="flex gap-2 items-baseline">
+          <BoardName />
         </div>
-        <div className="p-2 border-t">
-          <div className="flex gap-2 items-baseline">
-            <span>Board name:</span> <BoardName />
-          </div>
+        <div className="flex-1">
           <PitchList />
         </div>
-        <div className="p-2 border-t">
-          <h3>Archived pitches</h3>
-          <ArchivedPitchList />
+        <div className="mt-6">
+          <ArchivedPitches />
         </div>
       </div>
-      {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
+      <div className="p-2">
+        <p className="text-center text-xs text-muted-foreground">
+          {others.length} other user(s) online.
+        </p>
+      </div>
     </div>
+  )
+}
+
+function ArchivedPitches() {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger>
+        <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <ChevronRight
+            className={cn('size-4 transition-transform', isOpen && 'rotate-90')}
+          />
+          <span className="flex-1">Archived pitches</span>
+        </h3>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2">
+        <ArchivedPitchList />
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
@@ -139,8 +206,10 @@ function PitchList() {
     []
   )
 
+  const createPitch = useCreatePitch()
+
   return pitches.length > 0 ? (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -157,13 +226,13 @@ function PitchList() {
           ))}
         </SortableContext>
       </DndContext>
-      <li>
-        <CreatePitchButton>Create new</CreatePitchButton>
-      </li>
     </ul>
   ) : (
     <p>
-      No pitch yet. <CreatePitchButton>Create the first one</CreatePitchButton>
+      No pitch yet.
+      <Button onClick={createPitch} variant="link">
+        Create the first one
+      </Button>
     </p>
   )
 }
@@ -178,12 +247,16 @@ function SortablePitchListItem({ pitch }: { pitch: Pitch }) {
   }
 
   return (
-    <div className="flex gap-2 items-baseline" ref={setNodeRef} style={style}>
-      <div className="cursor-move" {...listeners} {...attributes}>
-        ...
-      </div>{' '}
-      <PitchListItem pitch={pitch} />
-    </div>
+    <PitchListItem
+      ref={setNodeRef}
+      style={style}
+      grip={
+        <div className="flex cursor-move pl-2" {...listeners} {...attributes}>
+          <GripVertical className="size-4" />
+        </div>
+      }
+      pitch={pitch}
+    />
   )
 }
 
@@ -192,7 +265,7 @@ function ArchivedPitchList() {
     root.pitches.filter((pitch) => pitch.archived)
   )
   return pitches.length > 0 ? (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col">
       {pitches.map((pitch) => (
         <PitchListItem key={pitch.id} pitch={pitch} />
       ))}
@@ -202,7 +275,10 @@ function ArchivedPitchList() {
   )
 }
 
-function PitchListItem({ pitch }: { pitch: Pitch }) {
+const PitchListItem = forwardRef<
+  HTMLLIElement,
+  { pitch: Pitch; grip?: ReactNode; style?: CSSProperties }
+>(({ pitch, grip, style }, forwardedRef) => {
   const updatePitchTitle = useMutation(({ storage }, title: string) => {
     storage
       .get('pitches')
@@ -211,63 +287,67 @@ function PitchListItem({ pitch }: { pitch: Pitch }) {
   }, [])
 
   const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
+  const archivePitch = useArchivePitchMutation(pitch)
 
   return (
-    <li className="flex gap-2 items-center">
+    <li
+      ref={forwardedRef}
+      className="flex-1 flex items-center bg-background hover:bg-slate-100 rounded"
+      style={style}
+    >
+      {grip}
       <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle}>
         {(edit) => (
-          <div className="flex gap-1 items-baseline">
-            <span className={selectedPitchId === pitch.id ? 'font-bold' : ''}>
+          <div className="flex-1 flex gap-1 items-center">
+            <Button
+              variant="link"
+              onClick={() => setSelectedPitchId(pitch.id)}
+              className={
+                (selectedPitchId === pitch.id ? 'font-bold' : '') +
+                ' flex-1 text-left justify-start'
+              }
+            >
               {pitch.title}
-            </span>
-            <button onClick={edit} type="button">
-              Rename
-            </button>
-            <ArchivePitchButton
-              pitchId={pitch.id}
-              archived={pitch.archived ?? false}
-            />
-            <button onClick={() => setSelectedPitchId(pitch.id)}>Open</button>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Ellipsis className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+                <DropdownMenuItem onClick={archivePitch}>
+                  {pitch.archived ? 'Restore' : 'Archive'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </StringViewAndEditor>
     </li>
   )
-}
+})
+PitchListItem.displayName = 'PitchListItem'
 
-function ArchivePitchButton({
-  pitchId,
-  archived,
-}: {
-  pitchId: string
-  archived: boolean
-}) {
-  const archivePitch = useMutation(({ storage }) => {
-    storage
-      .get('pitches')
-      .find((pitch) => pitch.get('id') === pitchId)
-      ?.set('archived', !archived)
-  }, [])
-
-  return (
-    <button type="button" onClick={archivePitch}>
-      {archived ? 'Restore' : 'Archive'}
-    </button>
+function useArchivePitchMutation(pitch: Pitch) {
+  return useMutation(
+    ({ storage }) => {
+      storage
+        .get('pitches')
+        .find((p) => p.get('id') === pitch.id)
+        ?.set('archived', !pitch.archived)
+    },
+    [pitch]
   )
 }
 
-function CreatePitchButton({ children }: PropsWithChildren<{}>) {
-  const createPitch = useMutation(({ storage }) => {
+function useCreatePitch() {
+  return useMutation(({ storage }) => {
     storage
       .get('pitches')
       .push(new LiveObject({ id: nanoid(), title: 'New pitch' }))
   }, [])
-
-  return (
-    <button type="button" onClick={createPitch}>
-      {children}
-    </button>
-  )
 }
 
 function BoardName() {
@@ -275,18 +355,30 @@ function BoardName() {
   const updateName = useMutation(({ storage }, name: string) => {
     storage.get('info').set('name', name)
   }, [])
+  const createPitch = useCreatePitch()
 
   return (
-    <StringViewAndEditor value={name} updateValue={updateName}>
-      {(edit) => (
-        <h2
-          role="button"
-          onClick={edit}
-          className="hover:bg-slate-50 p-1 rounded border border-transparent"
-        >
-          {name}
-        </h2>
-      )}
-    </StringViewAndEditor>
+    <div className="w-full flex items-center">
+      <StringViewAndEditor value={name} updateValue={updateName}>
+        {(edit) => (
+          <>
+            <h2 className="flex-1 font-bold text-lg">{name}</h2>
+            <Button size="icon" variant="ghost" onClick={createPitch}>
+              <PlusIcon className="size-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <Ellipsis className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
+      </StringViewAndEditor>
+    </div>
   )
 }

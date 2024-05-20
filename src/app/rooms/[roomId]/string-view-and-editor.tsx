@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ReactNode, useState } from 'react'
 
 export function StringViewAndEditor({
@@ -37,22 +39,21 @@ function StringEditor({
 
   return (
     <form
-      className="flex gap-1"
+      className="flex gap-2"
       onSubmit={() => {
         updateValue(draftName)
         cancel()
       }}
     >
-      <input
-        className="px-2 py-1 border rounded"
+      <Input
         value={draftName}
         onChange={(event) => setDraftName(event.target.value)}
         autoFocus
       />
-      <button type="submit">Save</button>
-      <button type="button" onClick={() => cancel()}>
+      <Button type="submit">Save</Button>
+      <Button type="button" onClick={() => cancel()}>
         Cancel
-      </button>
+      </Button>
     </form>
   )
 }
