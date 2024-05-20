@@ -1,10 +1,4 @@
-import {
-  Scope,
-  Task,
-  TaskStatus,
-  useMutation,
-  useStorage,
-} from '@/liveblocks.config'
+import { Scope, TaskStatus, useMutation, useStorage } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
@@ -31,7 +25,7 @@ import {
   useState,
 } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
-import { useDroppable, useDraggable } from '@dnd-kit/core'
+import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -47,6 +41,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
+import { TaskView } from './task-view'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -64,8 +59,8 @@ export function PitchView({ pitchId }: { pitchId: string }) {
   const createScope = useCreateScopeMutation(pitchId)
 
   return (
-    <div className="min-h-full min-w-full p-2 flex flex-col gap-2">
-      <div className="flex items-baseline gap-2">
+    <div className="overflow-auto w-full h-full p-2 flex flex-col gap-2">
+      <div className="sticky left-0 flex items-baseline gap-2">
         <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
           {(edit) => (
             <div className="flex items-center gap-4">
@@ -96,11 +91,9 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         <ActiveScopeList pitchId={pitchId} />
       </div>
 
-      <div>
-        <ArchiveCollapsible label="Archived scopes">
-          <ArchivedScopeList pitchId={pitchId} />
-        </ArchiveCollapsible>
-      </div>
+      <ArchiveCollapsible label="Archived scopes">
+        <ArchivedScopeList pitchId={pitchId} />
+      </ArchiveCollapsible>
     </div>
   )
 }
@@ -283,6 +276,7 @@ const ScopeView = forwardRef<
 
   const archiveScope = useArchiveScopeMutation(scope.id)
   const restoreScope = useRestoreScopeMutation(scope.id)
+  const createTask = useCreateTaskMutation(scope.id)
 
   const [isOpen, setIsOpen] = useState(scope.archived === false)
 
@@ -296,12 +290,12 @@ const ScopeView = forwardRef<
         defaultOpen={scope.archived === false}
         onOpenChange={setIsOpen}
       >
-        <div className="flex items-center gap-1">
+        <div className="sticky w-fit left-0 flex items-center gap-4">
           <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
             {(edit) => (
               <>
-                {grip}
                 <CollapsibleTrigger className="flex items-center gap-2">
+                  {grip}
                   <ChevronRight
                     className={cn(
                       isOpen && 'rotate-90',
@@ -310,25 +304,32 @@ const ScopeView = forwardRef<
                   />
                   <span className="text-sm font-semibold">{scope.title}</span>
                 </CollapsibleTrigger>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Ellipsis className="size-4" />
+                <div>
+                  {isOpen && (
+                    <Button variant="ghost" size="icon" onClick={createTask}>
+                      <Plus className="size-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
-                    {scope.archived ? (
-                      <DropdownMenuItem onClick={restoreScope}>
-                        Restore
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={archiveScope}>
-                        Archive
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Ellipsis className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+                      {scope.archived ? (
+                        <DropdownMenuItem onClick={restoreScope}>
+                          Restore
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={archiveScope}>
+                          Archive
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </>
             )}
           </StringViewAndEditor>
@@ -346,34 +347,19 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const tasks = useStorage((root) =>
     root.tasks.filter((task) => task.scopeId === scopeId && !task.archived)
   )
-  const createTask = useCreateTaskMutation(scopeId)
-  const updateTaskStatus = useUpdateTaskStatus()
-
   return (
-    // <DndContext
-    //   onDragEnd={(event) => {
-    //     const taskId = event.active.id as string
-    //     const [scopeId, status] = (event.over?.id as string)?.split('/') as [
-    //       string,
-    //       TaskStatus | undefined
-    //     ]
-    //     if (status) {
-    //       updateTaskStatus(taskId, scopeId, status)
-    //     }
-    //   }}
-    // >
-    <div className="flex gap-2">
+    <div className="flex gap-2 w-fit">
       <ScopeStatusTaskList colCount={3} scopeId={scopeId} status="todo">
         {tasks
           .filter((t) => t.status === 'todo')
           .map((task) => (
             <TaskView key={task.id} task={task} />
           ))}
-        <div>
-          <div className="border rounded p-2">
-            <button onClick={createTask}>Create</button>
+        {tasks.length === 0 && (
+          <div className="text-muted-foreground text-xs">
+            No task yet in this scope.
           </div>
-        </div>
+        )}
       </ScopeStatusTaskList>
       <ScopeStatusTaskList colCount={2} scopeId={scopeId} status="in_progress">
         {tasks
@@ -386,11 +372,12 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
         {tasks
           .filter((t) => t.status === 'done')
           .map((task) => (
-            <TaskView key={task.id} task={task} />
+            <div key={task.id}>
+              <TaskView task={task} />
+            </div>
           ))}
       </ScopeStatusTaskList>
     </div>
-    // </DndContext>
   )
 }
 
@@ -404,9 +391,10 @@ function ScopeStatusTaskList({
   scopeId: string
   status: TaskStatus
 }>) {
-  const taskWidth = 120
+  const taskWidth = 200
   const gap = 8
-  const width = taskWidth * colCount + gap * (colCount - 1)
+  const padding = 8
+  const width = taskWidth * colCount + gap * (colCount - 1) + 2 * padding
 
   const { isOver, active, setNodeRef } = useDroppable({
     id: `${scopeId}/${status}`,
@@ -425,8 +413,9 @@ function ScopeStatusTaskList({
   return (
     <div
       ref={setNodeRef}
-      className={`grid border-2 border-dashed ${droppableHoverClass1} ${droppableHoverClass2}`}
+      className={`grid border-2 border-dashed bg-slate-50 ${droppableHoverClass1} ${droppableHoverClass2}`}
       style={{
+        padding,
         width,
         gap,
         gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
@@ -467,128 +456,5 @@ function useUpdateTaskStatus() {
       storage.get('tasks').move(taskIndex, newTaskIndex)
     },
     []
-  )
-}
-
-function TaskView({ task }: { task: Task }) {
-  const updateTaskTitle = useMutation(
-    ({ storage }, title: string) => {
-      storage
-        .get('tasks')
-        .find((t) => t.get('id') === task.id)
-        ?.set('title', title)
-    },
-    [task.id]
-  )
-  const archiveTask = useMutation(
-    ({ storage }) => {
-      storage
-        .get('tasks')
-        .find((t) => t.get('id') === task.id)
-        ?.set('archived', true)
-    },
-    [task.id]
-  )
-
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
-    data: {
-      type: 'task',
-      taskId: task.id,
-    },
-  })
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined
-
-  return (
-    <div>
-      <div
-        className="border rounded p-2 text-sm bg-white"
-        ref={setNodeRef}
-        style={style}
-      >
-        <TaskTitleViewAndEditor
-          value={task.title}
-          updateValue={updateTaskTitle}
-        >
-          {(edit) => (
-            <div className="flex flex-col gap-1">
-              <div>
-                <span {...listeners} {...attributes}>
-                  ...
-                </span>
-                {task.title}
-              </div>
-              <div className="flex gap-1">
-                <button onClick={edit}>Edit</button>
-                <button onClick={archiveTask}>Delete</button>
-              </div>
-            </div>
-          )}
-        </TaskTitleViewAndEditor>
-      </div>
-    </div>
-  )
-}
-
-function TaskTitleViewAndEditor({
-  value,
-  updateValue,
-  children,
-}: {
-  value: string
-  updateValue: (value: string) => void
-  children?: (edit: () => void) => ReactNode
-}) {
-  const [editMode, setEditMode] = useState(false)
-
-  if (editMode) {
-    return (
-      <TaskTitleEditor
-        value={value}
-        updateValue={updateValue}
-        cancel={() => setEditMode(false)}
-      />
-    )
-  }
-
-  return children?.(() => setEditMode(true))
-}
-
-function TaskTitleEditor({
-  value,
-  updateValue,
-  cancel,
-}: {
-  value: string
-  updateValue: (name: string) => void
-  cancel: () => void
-}) {
-  const [draftName, setDraftName] = useState(value)
-
-  return (
-    <form
-      className="flex flex-col gap-1"
-      onSubmit={() => {
-        updateValue(draftName)
-        cancel()
-      }}
-    >
-      <textarea
-        className="px-2 py-1 border rounded"
-        value={draftName}
-        onChange={(event) => setDraftName(event.target.value)}
-        autoFocus
-      />
-      <div className="flex justify-center gap-1">
-        <button type="submit">Save</button>
-        <button type="button" onClick={() => cancel()}>
-          Cancel
-        </button>
-      </div>
-    </form>
   )
 }

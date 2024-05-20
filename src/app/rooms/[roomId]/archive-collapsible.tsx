@@ -16,8 +16,8 @@ export function ArchiveCollapsible({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger>
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
+      <CollapsibleTrigger className="sticky left-0">
+        <h3 className="flex items-center gap-2 text-sm font-semibold w-fit">
           <ChevronRight
             className={cn('size-4 transition-transform', isOpen && 'rotate-90')}
           />
