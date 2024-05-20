@@ -70,7 +70,20 @@ export type Scope = {
   pitchId: string
   title: string
   archived?: boolean
+  core?: boolean
+  color?: ScopeColor
 }
+export const scopeColors = [
+  'color-1',
+  'color-2',
+  'color-3',
+  'color-4',
+  'color-5',
+  'color-6',
+  'color-7',
+  'color-8',
+] as const
+export type ScopeColor = (typeof scopeColors)[number]
 export type Task = {
   id: string
   scopeId: string

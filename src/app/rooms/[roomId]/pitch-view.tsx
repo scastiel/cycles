@@ -1,4 +1,11 @@
-import { Scope, TaskStatus, useMutation, useStorage } from '@/liveblocks.config'
+import {
+  Scope,
+  ScopeColor,
+  TaskStatus,
+  scopeColors,
+  useMutation,
+  useStorage,
+} from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
@@ -29,11 +36,21 @@ import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSubContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronRight, Ellipsis, GripVertical, Plus } from 'lucide-react'
+import {
+  ChevronRight,
+  Circle,
+  Ellipsis,
+  GripVertical,
+  Plus,
+  Star,
+} from 'lucide-react'
 import { ArchiveCollapsible } from '@/app/rooms/[roomId]/archive-collapsible'
 import {
   Collapsible,
@@ -274,6 +291,18 @@ const ScopeView = forwardRef<
       .find((s) => s.get('id') === scope.id)
       ?.set('title', title)
   }, [])
+  const updateCore = useMutation(({ storage }, core: boolean) => {
+    storage
+      .get('scopes')
+      .find((s) => s.get('id') === scope.id)
+      ?.set('core', core)
+  }, [])
+  const updateColor = useMutation(({ storage }, color: ScopeColor) => {
+    storage
+      .get('scopes')
+      .find((s) => s.get('id') === scope.id)
+      ?.set('color', color)
+  }, [])
 
   const archiveScope = useArchiveScopeMutation(scope.id)
   const restoreScope = useRestoreScopeMutation(scope.id)
@@ -300,6 +329,7 @@ const ScopeView = forwardRef<
                       'transition-transform size-4'
                     )}
                   />
+                  <ScopeIcon scope={scope} />
                   <span className="text-sm font-semibold">{scope.title}</span>
                 </CollapsibleTrigger>
                 <div>
@@ -316,6 +346,31 @@ const ScopeView = forwardRef<
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuCheckboxItem
+                        checked={scope.core === true}
+                        onCheckedChange={updateCore}
+                      >
+                        Core scope
+                      </DropdownMenuCheckboxItem>
+                      <div className="grid grid-cols-4">
+                        {scopeColors.map((color) => (
+                          <DropdownMenuItem
+                            key={color}
+                            onClick={() => updateColor(color)}
+                            className="group"
+                          >
+                            <Circle
+                              className={cn(
+                                'size-4 group-hover:opacity-100',
+                                scope.color !== color && 'opacity-20',
+                                getScopeColorClasses(color)
+                              )}
+                            />
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
+                      <DropdownMenuSeparator />
                       {scope.archived ? (
                         <DropdownMenuItem onClick={restoreScope}>
                           Restore
@@ -340,6 +395,24 @@ const ScopeView = forwardRef<
   )
 })
 ScopeView.displayName = 'ScopeView'
+
+function ScopeIcon({ scope }: { scope: Scope }) {
+  const Icon = scope.core ? Star : Circle
+  return <Icon className={cn('size-4', getScopeColorClasses(scope.color))} />
+}
+
+function getScopeColorClasses(color?: ScopeColor): string {
+  return match(color)
+    .with('color-1', () => 'fill-blue-300 stroke-blue-300')
+    .with('color-2', () => 'fill-yellow-300 stroke-yellow-300')
+    .with('color-3', () => 'fill-red-300 stroke-red-300')
+    .with('color-4', () => 'fill-green-300 stroke-green-300')
+    .with('color-5', () => 'fill-orange-300 stroke-orange-300')
+    .with('color-6', () => 'fill-pink-300 stroke-pink-300')
+    .with('color-7', () => 'fill-indigo-300 stroke-indigo-300')
+    .with('color-8', () => 'fill-slate-300 stroke-slate-300')
+    .otherwise(() => 'fill-gray-300 stroke-gray-300')
+}
 
 function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const tasks = useStorage((root) =>
