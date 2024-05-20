@@ -39,14 +39,7 @@ import assert from 'assert'
 import { PitchView } from '@/app/rooms/[roomId]/pitch-view'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { Button } from '@/components/ui/button'
-import {
-  ChevronRight,
-  Dot,
-  Ellipsis,
-  GripVertical,
-  Menu,
-  PlusIcon,
-} from 'lucide-react'
+import { Dot, Ellipsis, GripVertical, Menu, PlusIcon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,16 +49,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
-import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { ArchiveCollapsible } from './archive-collapsible'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -163,22 +151,10 @@ function SidePanel() {
 }
 
 function ArchivedPitches() {
-  const [isOpen, setIsOpen] = useState(false)
-
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger>
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <ChevronRight
-            className={cn('size-4 transition-transform', isOpen && 'rotate-90')}
-          />
-          <span className="flex-1">Archived pitches</span>
-        </h3>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2">
-        <ArchivedPitchList />
-      </CollapsibleContent>
-    </Collapsible>
+    <ArchiveCollapsible label="Archived pitches">
+      <ArchivedPitchList />
+    </ArchiveCollapsible>
   )
 }
 
@@ -228,12 +204,12 @@ function PitchList() {
       </DndContext>
     </ul>
   ) : (
-    <p>
-      No pitch yet.
+    <div>
+      <span className="text-sm">No pitch yet.</span>
       <Button onClick={createPitch} variant="link">
         Create the first one
       </Button>
-    </p>
+    </div>
   )
 }
 

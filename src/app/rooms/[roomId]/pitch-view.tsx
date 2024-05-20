@@ -23,7 +23,13 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { PropsWithChildren, ReactNode, useState } from 'react'
+import {
+  CSSProperties,
+  PropsWithChildren,
+  ReactNode,
+  forwardRef,
+  useState,
+} from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
@@ -33,7 +39,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Ellipsis } from 'lucide-react'
+import { ChevronRight, Ellipsis, GripVertical, Plus } from 'lucide-react'
+import { ArchiveCollapsible } from '@/app/rooms/[roomId]/archive-collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -48,31 +61,46 @@ export function PitchView({ pitchId }: { pitchId: string }) {
       ?.set('title', title)
   }, [])
 
+  const createScope = useCreateScopeMutation(pitchId)
+
   return (
-    <div className="flex-1 p-2">
+    <div className="min-h-full min-w-full p-2 flex flex-col gap-2">
       <div className="flex items-baseline gap-2">
         <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
           {(edit) => (
             <div className="flex items-center gap-4">
-              <h2 className="font-bold">{pitch.title}</h2>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="ghost">
-                    <Ellipsis className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={edit}>
-                    Rename pitch
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <h2 className="font-bold text-lg">{pitch.title}</h2>
+              <div>
+                <Button onClick={createScope} variant="ghost" size="icon">
+                  <Plus className="size-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost">
+                      <Ellipsis className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={edit}>
+                      Rename pitch
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           )}
         </StringViewAndEditor>
       </div>
 
-      <ActiveScopeList pitchId={pitchId} />
+      <div className="flex-1">
+        <ActiveScopeList pitchId={pitchId} />
+      </div>
+
+      <div>
+        <ArchiveCollapsible label="Archived scopes">
+          <ArchivedScopeList pitchId={pitchId} />
+        </ArchiveCollapsible>
+      </div>
     </div>
   )
 }
@@ -84,28 +112,17 @@ function ActiveScopeList({ pitchId }: { pitchId: string }) {
   const createScope = useCreateScopeMutation(pitchId)
 
   return (
-    <div>
-      <div className="flex flex-col gap-2">
-        {scopes.length > 0 ? (
-          <>
-            <ScopeList scopes={scopes} />
-            <div>
-              <button type="button" onClick={createScope}>
-                Create new
-              </button>
-            </div>
-          </>
-        ) : (
-          <div>
-            No scope yet.{' '}
-            <button type="button" onClick={createScope}>
-              Create the first one
-            </button>
-          </div>
-        )}
-      </div>
-      <h3>Archived scopes</h3>
-      <ArchivedScopeList pitchId={pitchId} />
+    <div className="flex flex-col">
+      {scopes.length > 0 ? (
+        <ScopeList scopes={scopes} />
+      ) : (
+        <div>
+          <span className="text-sm">No scope yet.</span>
+          <Button variant="link" size="sm" type="button" onClick={createScope}>
+            Create the first one
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -116,7 +133,7 @@ function ArchivedScopeList({ pitchId }: { pitchId: string }) {
   )
 
   return scopes.length > 0 ? (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col gap-4">
       {scopes.map((scope) => (
         <ScopeView key={scope.id} scope={scope} />
       ))}
@@ -240,16 +257,23 @@ function SortableScopeView({ scope }: { scope: Scope }) {
   }
 
   return (
-    <div className="flex gap-2 items-baseline" ref={setNodeRef} style={style}>
-      <div className="cursor-move" {...listeners} {...attributes}>
-        ...
-      </div>
-      <ScopeView scope={scope} />
+    <div ref={setNodeRef} style={style}>
+      <ScopeView
+        scope={scope}
+        grip={
+          <div className="cursor-move" {...listeners} {...attributes}>
+            <GripVertical className="size-4" />
+          </div>
+        }
+      />
     </div>
   )
 }
 
-function ScopeView({ scope }: { scope: Scope }) {
+const ScopeView = forwardRef<
+  HTMLDivElement,
+  { scope: Scope; grip?: ReactNode; style?: CSSProperties }
+>(({ scope, grip, style }, forwardedRef) => {
   const updateTitle = useMutation(({ storage }, title: string) => {
     storage
       .get('scopes')
@@ -260,26 +284,63 @@ function ScopeView({ scope }: { scope: Scope }) {
   const archiveScope = useArchiveScopeMutation(scope.id)
   const restoreScope = useRestoreScopeMutation(scope.id)
 
+  const [isOpen, setIsOpen] = useState(scope.archived === false)
+
   return (
-    <div className="flex-1 flex flex-col gap-2">
-      <div className="flex items-baseline gap-1">
-        <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
-          {(edit) => (
-            <>
-              {scope.title} <button onClick={edit}>Rename</button>
-            </>
-          )}
-        </StringViewAndEditor>
-        {scope.archived ? (
-          <button onClick={restoreScope}>Restore</button>
-        ) : (
-          <button onClick={archiveScope}>Archive</button>
-        )}
-      </div>
-      <ScopeTasksList scopeId={scope.id} />
+    <div
+      className="flex-1 flex flex-col gap-2"
+      style={style}
+      ref={forwardedRef}
+    >
+      <Collapsible
+        defaultOpen={scope.archived === false}
+        onOpenChange={setIsOpen}
+      >
+        <div className="flex items-center gap-1">
+          <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
+            {(edit) => (
+              <>
+                {grip}
+                <CollapsibleTrigger className="flex items-center gap-2">
+                  <ChevronRight
+                    className={cn(
+                      isOpen && 'rotate-90',
+                      'transition-transform size-4'
+                    )}
+                  />
+                  <span className="text-sm font-semibold">{scope.title}</span>
+                </CollapsibleTrigger>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Ellipsis className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+                    {scope.archived ? (
+                      <DropdownMenuItem onClick={restoreScope}>
+                        Restore
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={archiveScope}>
+                        Archive
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </StringViewAndEditor>
+        </div>
+        <CollapsibleContent className="mb-4">
+          <ScopeTasksList scopeId={scope.id} />
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
-}
+})
+ScopeView.displayName = 'ScopeView'
 
 function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const tasks = useStorage((root) =>
