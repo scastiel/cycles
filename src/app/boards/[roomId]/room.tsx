@@ -36,7 +36,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import assert from 'assert'
-import { PitchView } from '@/app/rooms/[roomId]/pitch-view'
+import { PitchView } from '@/app/boards/[roomId]/pitch-view'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { Button } from '@/components/ui/button'
 import { Dot, Ellipsis, GripVertical, Menu, PlusIcon } from 'lucide-react'
@@ -58,7 +58,7 @@ import { ArchiveCollapsible } from './archive-collapsible'
 export function Room({ roomId }: { roomId: string }) {
   return (
     <RoomProvider
-      id={decodeURIComponent(roomId)}
+      id={'demo:' + decodeURIComponent(roomId)}
       initialPresence={{}}
       initialStorage={{
         info: new LiveObject({ name: 'New board' }),
@@ -67,7 +67,7 @@ export function Room({ roomId }: { roomId: string }) {
         tasks: new LiveList(),
       }}
     >
-      <ClientSideSuspense fallback={<div>Loading…</div>}>
+      <ClientSideSuspense fallback={<div className="p-2">Loading…</div>}>
         {() => (
           <SelectedPitchContextProvider>
             <RoomContent />

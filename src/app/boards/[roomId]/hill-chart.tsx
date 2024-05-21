@@ -1,4 +1,4 @@
-import { ScopeIcon } from '@/app/rooms/[roomId]/scope-icon'
+import { ScopeIcon } from '@/app/boards/[roomId]/scope-icon'
 import { Scope, useMutation, useStorage } from '@/liveblocks.config'
 import { match } from 'ts-pattern'
 import { CSS } from '@dnd-kit/utilities'

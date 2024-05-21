@@ -50,7 +50,7 @@ import {
   GripVertical,
   Plus,
 } from 'lucide-react'
-import { ArchiveCollapsible } from '@/app/rooms/[roomId]/archive-collapsible'
+import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
 import {
   Collapsible,
   CollapsibleContent,
@@ -59,7 +59,7 @@ import {
 import { cn } from '@/lib/utils'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
-import { PitchDashboard } from '@/app/rooms/[roomId]/hill-chart'
+import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon, getScopeColorClasses } from './scope-icon'
 
 export function PitchView({ pitchId }: { pitchId: string }) {

@@ -7,6 +7,8 @@ const liveblocks = new Liveblocks({
   secret: env.LIVEBLOCKS_SECRET_KEY,
 })
 
+export const DEMO_ROOM = 'demo'
+
 export async function POST(request: Request) {
   const { userId } = auth()
   if (!userId) {
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
 
   // Use a naming pattern to allow access to rooms with wildcards
   // Giving the user read access on their org, and write access on their group
-  session.allow(`my-org:*`, session.FULL_ACCESS)
+  session.allow(`${DEMO_ROOM}:*`, session.FULL_ACCESS)
 
   // Authorize the user and return the result
   const { status, body } = await session.authorize()

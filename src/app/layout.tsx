@@ -6,7 +6,9 @@ import {
   SignedIn,
   SignedOut,
   UserButton,
+  useSignIn,
 } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -26,7 +28,9 @@ export default function RootLayout({
             <h1 className="font-bold">Cycles</h1>
             <div className="flex items-center">
               <SignedOut>
-                <SignInButton />
+                <SignInButton>
+                  <Button variant="link">Sign in</Button>
+                </SignInButton>
               </SignedOut>
               <SignedIn>
                 <UserButton />
