@@ -59,6 +59,9 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
 
   return (
     <div className="w-[400px] aspect-video border relative p-2">
+      <h3 className="text-xs uppercase mb-2 text-muted-foreground">
+        Scope list
+      </h3>
       <ul className="flex flex-col gap-1">
         {scopes.map((scope) => (
           <li
@@ -123,6 +126,9 @@ function HillChart({ scopes }: { scopes: Scope[] }) {
 function HillBackground() {
   return (
     <>
+      <h3 className="absolute top-0 left-0 p-2 text-xs uppercase mb-2 text-muted-foreground">
+        Hill chart
+      </h3>
       <svg
         className="absolute inset-0 -z-10"
         viewBox="0 0 160 90"
