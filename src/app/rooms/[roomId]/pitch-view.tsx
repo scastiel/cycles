@@ -49,7 +49,6 @@ import {
   Ellipsis,
   GripVertical,
   Plus,
-  Star,
 } from 'lucide-react'
 import { ArchiveCollapsible } from '@/app/rooms/[roomId]/archive-collapsible'
 import {
@@ -60,6 +59,8 @@ import {
 import { cn } from '@/lib/utils'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
+import { HillChart } from '@/app/rooms/[roomId]/hill-chart'
+import { ScopeIcon, getScopeColorClasses } from './scope-icon'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -103,6 +104,10 @@ export function PitchView({ pitchId }: { pitchId: string }) {
             </div>
           )}
         </StringViewAndEditor>
+      </div>
+
+      <div>
+        <HillChart pitchId={pitch.id} />
       </div>
 
       <div className="flex-1">
@@ -395,24 +400,6 @@ const ScopeView = forwardRef<
   )
 })
 ScopeView.displayName = 'ScopeView'
-
-function ScopeIcon({ scope }: { scope: Scope }) {
-  const Icon = scope.core ? Star : Circle
-  return <Icon className={cn('size-4', getScopeColorClasses(scope.color))} />
-}
-
-function getScopeColorClasses(color?: ScopeColor): string {
-  return match(color)
-    .with('color-1', () => 'fill-blue-300 stroke-blue-300')
-    .with('color-2', () => 'fill-yellow-300 stroke-yellow-300')
-    .with('color-3', () => 'fill-red-300 stroke-red-300')
-    .with('color-4', () => 'fill-green-300 stroke-green-300')
-    .with('color-5', () => 'fill-orange-300 stroke-orange-300')
-    .with('color-6', () => 'fill-pink-300 stroke-pink-300')
-    .with('color-7', () => 'fill-indigo-300 stroke-indigo-300')
-    .with('color-8', () => 'fill-slate-300 stroke-slate-300')
-    .otherwise(() => 'fill-gray-300 stroke-gray-300')
-}
 
 function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const tasks = useStorage((root) =>

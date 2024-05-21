@@ -72,6 +72,7 @@ export type Scope = {
   archived?: boolean
   core?: boolean
   color?: ScopeColor
+  progress?: number
 }
 export const scopeColors = [
   'color-1',
