@@ -51,7 +51,7 @@ function StringEditor({
         autoFocus
       />
       <Button type="submit">Save</Button>
-      <Button type="button" onClick={() => cancel()}>
+      <Button variant="ghost" type="button" onClick={() => cancel()}>
         Cancel
       </Button>
     </form>
