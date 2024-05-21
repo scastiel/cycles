@@ -1,5 +1,5 @@
 import { ScopeIcon } from '@/app/rooms/[roomId]/scope-icon'
-import { useMutation, useStorage } from '@/liveblocks.config'
+import { Scope, useMutation, useStorage } from '@/liveblocks.config'
 import { match } from 'ts-pattern'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -12,17 +12,79 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, createContext, useContext, useState } from 'react'
 import { cn } from '@/lib/utils'
+import assert from 'assert'
 
-export function HillChart({ pitchId }: { pitchId: string }) {
+const HoveredScopeContext = createContext<{
+  hoveredScopeId: string | null
+  setHoveredScopeId: (id: string | null) => void
+} | null>(null)
+
+function HoveredScopeContextProvider({ children }: PropsWithChildren) {
+  const [hoveredScopeId, setHoveredScopeId] = useState<string | null>(null)
+  return (
+    <HoveredScopeContext.Provider value={{ hoveredScopeId, setHoveredScopeId }}>
+      {children}
+    </HoveredScopeContext.Provider>
+  )
+}
+
+function useHoveredScopeContext() {
+  const context = useContext(HoveredScopeContext)
+  assert(
+    context,
+    'useHoveredScopeId must be used inside <HoveredScopeContextProvider>'
+  )
+  return context
+}
+
+export function PitchDashboard({ pitchId }: { pitchId: string }) {
   const scopes = useStorage((root) =>
     root.scopes.filter((scope) => scope.pitchId === pitchId && !scope.archived)
   )
 
   return (
+    <HoveredScopeContextProvider>
+      <div className="w-fit flex gap-2">
+        <ScopeList scopes={scopes} />
+        <HillChart scopes={scopes} />
+      </div>
+    </HoveredScopeContextProvider>
+  )
+}
+
+function ScopeList({ scopes }: { scopes: Scope[] }) {
+  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
+
+  return (
+    <div className="w-[400px] aspect-video border relative p-2">
+      <ul className="flex flex-col gap-1">
+        {scopes.map((scope) => (
+          <li
+            key={scope.id}
+            className={cn(
+              'flex gap-1 items-center p-1 -m-1 rounded',
+              hoveredScopeId === scope.id && 'bg-slate-100'
+            )}
+            onMouseEnter={() => setHoveredScopeId(scope.id)}
+            onMouseLeave={() => setHoveredScopeId(null)}
+          >
+            <ScopeIcon scope={scope} />
+            <span className="text-sm">{scope.title}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function HillChart({ scopes }: { scopes: Scope[] }) {
+  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
+
+  return (
     <HillChartDndContext>
-      <div className="w-full max-w-[400px] aspect-video border relative">
+      <div className="w-[400px] aspect-video border relative">
         <HillBackground />
         <div className="grid grid-cols-9 gap-2 p-2 h-full">
           {Array(9)
@@ -35,7 +97,17 @@ export function HillChart({ pitchId }: { pitchId: string }) {
                       .filter((scope) => (scope.progress ?? 0) === i)
                       .map((scope) => (
                         <DraggableScopeIcon scopeId={scope.id} key={scope.id}>
-                          <ScopeIcon scope={scope} />
+                          <div
+                            className={cn(
+                              'rounded-full',
+                              hoveredScopeId === scope.id &&
+                                'outline outline-slate-500'
+                            )}
+                            onMouseEnter={() => setHoveredScopeId(scope.id)}
+                            onMouseLeave={() => setHoveredScopeId(null)}
+                          >
+                            <ScopeIcon scope={scope} />
+                          </div>
                         </DraggableScopeIcon>
                       ))}
                   </div>

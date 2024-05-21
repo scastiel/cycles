@@ -59,7 +59,7 @@ import {
 import { cn } from '@/lib/utils'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
-import { HillChart } from '@/app/rooms/[roomId]/hill-chart'
+import { PitchDashboard } from '@/app/rooms/[roomId]/hill-chart'
 import { ScopeIcon, getScopeColorClasses } from './scope-icon'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
@@ -106,9 +106,7 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         </StringViewAndEditor>
       </div>
 
-      <div>
-        <HillChart pitchId={pitch.id} />
-      </div>
+      <PitchDashboard pitchId={pitch.id} />
 
       <div className="flex-1">
         <ActiveScopeList pitchId={pitchId} />
