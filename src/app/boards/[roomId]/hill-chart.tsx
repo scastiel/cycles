@@ -1,5 +1,14 @@
-import { ScopeIcon } from '@/app/boards/[roomId]/scope-icon'
-import { Scope, useMutation, useStorage } from '@/liveblocks.config'
+import {
+  ScopeIcon,
+  getScopeColorClasses,
+} from '@/app/boards/[roomId]/scope-icon'
+import {
+  Scope,
+  ScopeColor,
+  scopeColors,
+  useMutation,
+  useStorage,
+} from '@/liveblocks.config'
 import { match } from 'ts-pattern'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -12,9 +21,33 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core'
-import { PropsWithChildren, createContext, useContext, useState } from 'react'
+import {
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useRef,
+  useState,
+} from 'react'
 import { cn } from '@/lib/utils'
 import assert from 'assert'
+import { SortableContext, useSortable } from '@dnd-kit/sortable'
+import { Circle, Ellipsis, GripVertical, Plus, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  useArchiveScopeMutation,
+  useCreateScopeMutation,
+  useRestoreScopeMutation,
+} from '@/app/boards/[roomId]/pitch-view'
+import { Input } from '@/components/ui/input'
 
 const HoveredScopeContext = createContext<{
   hoveredScopeId: string | null
@@ -47,38 +80,215 @@ export function PitchDashboard({ pitchId }: { pitchId: string }) {
   return (
     <HoveredScopeContextProvider>
       <div className="w-fit flex gap-2">
-        <ScopeList scopes={scopes} />
+        <ScopeList scopes={scopes} pitchId={pitchId} />
         <HillChart scopes={scopes} />
       </div>
     </HoveredScopeContextProvider>
   )
 }
 
-function ScopeList({ scopes }: { scopes: Scope[] }) {
-  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
+function ScopeListDndContext({
+  children,
+  scopes,
+}: PropsWithChildren<{ scopes: Scope[] }>) {
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  const moveScope = useMutation(
+    ({ storage }, fromScopeId: string, toScopeId: string) => {
+      const fromIndex = storage
+        .get('scopes')
+        .findIndex((s) => s.get('id') === fromScopeId)
+      const toIndex = storage
+        .get('scopes')
+        .findIndex((s) => s.get('id') === toScopeId)
+      if (fromIndex !== -1 && toIndex !== -1) {
+        storage.get('scopes').move(fromIndex, toIndex)
+      }
+    },
+    []
+  )
 
   return (
-    <div className="w-[400px] aspect-video border relative p-2">
-      <h3 className="text-xs uppercase mb-2 text-muted-foreground">
-        Scope list
-      </h3>
-      <ul className="flex flex-col gap-1">
-        {scopes.map((scope) => (
-          <li
-            key={scope.id}
-            className={cn(
-              'flex gap-1 items-center p-1 -m-1 rounded',
-              hoveredScopeId === scope.id && 'bg-slate-100'
-            )}
-            onMouseEnter={() => setHoveredScopeId(scope.id)}
-            onMouseLeave={() => setHoveredScopeId(null)}
-          >
-            <ScopeIcon scope={scope} />
-            <span className="text-sm">{scope.title}</span>
-          </li>
-        ))}
-      </ul>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={rectIntersection}
+      onDragEnd={(event) => {
+        const scopeId = event.active.id as string
+        const overScopeId = event.over?.id as string | undefined
+        if (overScopeId) {
+          moveScope(scopeId, overScopeId)
+        }
+      }}
+    >
+      <SortableContext items={scopes}>{children}</SortableContext>
+    </DndContext>
+  )
+}
+
+function SortableScopeItem({ scope }: { scope: Scope }) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: scope.id })
+  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex gap-2 items-center p-1 -m-1 rounded group',
+        hoveredScopeId === scope.id && 'bg-slate-100'
+      )}
+      onMouseEnter={() => setHoveredScopeId(scope.id)}
+      onMouseLeave={() => setHoveredScopeId(null)}
+    >
+      <div
+        className="hidden group-hover:block cursor-move"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-4" />
+      </div>
+      <div className="group-hover:hidden">
+        <ScopeIcon scope={scope} />
+      </div>
+      <span className="text-sm flex-1 text-nowrap text-ellipsis overflow-hidden">
+        {scope.title}
+      </span>
+      <ScopeDropdownMenu scope={scope}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6 opacity-10 group-hover:opacity-100"
+        >
+          <Ellipsis className="size-4" />
+        </Button>
+      </ScopeDropdownMenu>
     </div>
+  )
+}
+
+function ScopeDropdownMenu({
+  scope,
+  children,
+}: PropsWithChildren<{ scope: Scope }>) {
+  const updateTitle = useMutation(({ storage }, title: string) => {
+    storage
+      .get('scopes')
+      .find((s) => s.get('id') === scope.id)
+      ?.set('title', title)
+  }, [])
+  const updateColorCore = useMutation(
+    ({ storage }, color: ScopeColor, core: boolean) => {
+      storage
+        .get('scopes')
+        .find((s) => s.get('id') === scope.id)
+        ?.update({ color, core })
+    },
+    []
+  )
+
+  const archiveScope = useArchiveScopeMutation(scope.id)
+  const restoreScope = useRestoreScopeMutation(scope.id)
+
+  const [draftTitle, setDraftTitle] = useState(scope.title)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <div className="p-2 flex flex-col gap-1">
+          <h4 className="text-sm font-semibold">Scope title</h4>
+          <form
+            className="flex gap-1"
+            onSubmit={(event) => {
+              event.preventDefault()
+              updateTitle(draftTitle)
+            }}
+          >
+            <Input
+              className="flex-1"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+            />
+            <Button type="submit">Save</Button>
+          </form>
+        </div>
+        <DropdownMenuSeparator />
+        <div>
+          <h4 className="text-sm font-semibold px-2 pt-2">Scope icon</h4>
+          {[true, false].map((core) => (
+            <div key={String(core)} className="grid grid-cols-8">
+              {scopeColors.map((color) => {
+                const Icon = core ? Star : Circle
+                return (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    key={color}
+                    onClick={() => updateColorCore(color, core)}
+                    className="group"
+                  >
+                    <Icon
+                      className={cn(
+                        'size-4 group-hover:opacity-100',
+                        (scope.color !== color ||
+                          Boolean(scope.core) !== core) &&
+                          'opacity-20',
+                        getScopeColorClasses(color)
+                      )}
+                    />
+                  </Button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+        <DropdownMenuSeparator />
+        {scope.archived ? (
+          <DropdownMenuItem onClick={restoreScope}>
+            Restore scope
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={archiveScope} className="text-red-600">
+            Archive scope
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function ScopeList({ scopes, pitchId }: { scopes: Scope[]; pitchId: string }) {
+  const createScope = useCreateScopeMutation(pitchId)
+
+  return (
+    <ScopeListDndContext scopes={scopes}>
+      <div className="w-[400px] aspect-video border relative p-2 overflow-y-auto flex flex-col gap-1">
+        <div className="flex justify-between sticky top-0">
+          <h3 className="text-xs uppercase mb-2 text-muted-foreground">
+            Scope list
+          </h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6"
+            onClick={createScope}
+          >
+            <Plus className="size-4 text-muted-foreground" />
+          </Button>
+        </div>
+        <ul className="flex flex-col gap-2">
+          {scopes.map((scope) => (
+            <SortableScopeItem key={scope.id} scope={scope} />
+          ))}
+        </ul>
+      </div>
+    </ScopeListDndContext>
   )
 }
 

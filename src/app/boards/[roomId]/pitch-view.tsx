@@ -288,7 +288,7 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
   )
 }
 
-function useCreateScopeMutation(pitchId: string) {
+export function useCreateScopeMutation(pitchId: string) {
   return useMutation(
     ({ storage }) => {
       storage.get('scopes').push(
@@ -316,8 +316,10 @@ function createUseChangeScopeArchivedMutation(archived: boolean) {
     )
   }
 }
-const useArchiveScopeMutation = createUseChangeScopeArchivedMutation(true)
-const useRestoreScopeMutation = createUseChangeScopeArchivedMutation(false)
+export const useArchiveScopeMutation =
+  createUseChangeScopeArchivedMutation(true)
+export const useRestoreScopeMutation =
+  createUseChangeScopeArchivedMutation(false)
 
 function SortableScopeView({ scope }: { scope: Scope }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
