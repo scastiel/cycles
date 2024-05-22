@@ -311,89 +311,77 @@ const ScopeView = forwardRef<
   const restoreScope = useRestoreScopeMutation(scope.id)
   const createTask = useCreateTaskMutation(scope.id)
 
-  const [isOpen, setIsOpen] = useState(!scope.archived)
-
   return (
     <div
       className="flex-1 flex flex-col gap-2"
       style={style}
       ref={forwardedRef}
     >
-      <Collapsible defaultOpen={!scope.archived} onOpenChange={setIsOpen}>
-        <div className="sticky w-fit left-0 flex items-center gap-4">
-          <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
-            {(edit) => (
-              <>
-                <CollapsibleTrigger className="flex items-center gap-2">
-                  {grip}
-                  <ChevronRight
-                    className={cn(
-                      isOpen && 'rotate-90',
-                      'transition-transform size-4'
-                    )}
-                  />
-                  <ScopeIcon scope={scope} />
-                  <span className="text-sm font-semibold">{scope.title}</span>
-                </CollapsibleTrigger>
-                <div>
-                  {isOpen && (
-                    <Button variant="ghost" size="icon" onClick={createTask}>
-                      <Plus className="size-4" />
+      <div className="sticky w-fit left-0 flex items-center gap-4">
+        <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
+          {(edit) => (
+            <>
+              <div className="flex items-center gap-2">
+                {grip}
+                <ScopeIcon scope={scope} />
+                <span className="text-sm font-semibold">{scope.title}</span>
+              </div>
+              <div>
+                <Button variant="ghost" size="icon" onClick={createTask}>
+                  <Plus className="size-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Ellipsis className="size-4" />
                     </Button>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Ellipsis className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuCheckboxItem
-                        checked={scope.core === true}
-                        onCheckedChange={updateCore}
-                      >
-                        Core scope
-                      </DropdownMenuCheckboxItem>
-                      <div className="grid grid-cols-4">
-                        {scopeColors.map((color) => (
-                          <DropdownMenuItem
-                            key={color}
-                            onClick={() => updateColor(color)}
-                            className="group"
-                          >
-                            <Circle
-                              className={cn(
-                                'size-4 group-hover:opacity-100',
-                                scope.color !== color && 'opacity-20',
-                                getScopeColorClasses(color)
-                              )}
-                            />
-                          </DropdownMenuItem>
-                        ))}
-                      </div>
-                      <DropdownMenuSeparator />
-                      {scope.archived ? (
-                        <DropdownMenuItem onClick={restoreScope}>
-                          Restore
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={scope.core === true}
+                      onCheckedChange={updateCore}
+                    >
+                      Core scope
+                    </DropdownMenuCheckboxItem>
+                    <div className="grid grid-cols-4">
+                      {scopeColors.map((color) => (
+                        <DropdownMenuItem
+                          key={color}
+                          onClick={() => updateColor(color)}
+                          className="group"
+                        >
+                          <Circle
+                            className={cn(
+                              'size-4 group-hover:opacity-100',
+                              scope.color !== color && 'opacity-20',
+                              getScopeColorClasses(color)
+                            )}
+                          />
                         </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onClick={archiveScope}>
-                          Archive
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </>
-            )}
-          </StringViewAndEditor>
-        </div>
-        <CollapsibleContent className="mb-4">
-          <ScopeTasksList scopeId={scope.id} />
-        </CollapsibleContent>
-      </Collapsible>
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator />
+                    {scope.archived ? (
+                      <DropdownMenuItem onClick={restoreScope}>
+                        Restore
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={archiveScope}>
+                        Archive
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          )}
+        </StringViewAndEditor>
+      </div>
+      <div className="mb-4">
+        <ScopeTasksList scopeId={scope.id} />
+      </div>
     </div>
   )
 })
