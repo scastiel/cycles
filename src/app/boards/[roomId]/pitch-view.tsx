@@ -109,8 +109,8 @@ function useUpdateMyCursor(divRef: MutableRefObject<HTMLDivElement | null>) {
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!divRef.current) return
     const bounds = divRef.current.getBoundingClientRect()
-    const x = event.clientX - bounds.left
-    const y = event.clientY - bounds.top
+    const x = event.clientX - bounds.left + divRef.current.scrollLeft
+    const y = event.clientY - bounds.top + divRef.current.scrollTop
     updateMyPresence({
       cursor: { x, y },
     })
