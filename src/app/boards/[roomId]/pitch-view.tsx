@@ -4,7 +4,11 @@ import {
   TaskStatus,
   scopeColors,
   useMutation,
+  useMyPresence,
+  useOthers,
+  useOthersMapped,
   useStorage,
+  useUpdateMyPresence,
 } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
@@ -26,9 +30,13 @@ import {
 } from '@dnd-kit/sortable'
 import {
   CSSProperties,
+  MutableRefObject,
+  PointerEvent,
   PropsWithChildren,
   ReactNode,
+  Ref,
   forwardRef,
+  useRef,
   useState,
 } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
@@ -61,6 +69,7 @@ import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon, getScopeColorClasses } from './scope-icon'
+import Cursor from '@/app/boards/[roomId]/cursor'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -77,8 +86,16 @@ export function PitchView({ pitchId }: { pitchId: string }) {
 
   const createScope = useCreateScopeMutation(pitchId)
 
+  const divRef = useRef<HTMLDivElement | null>(null)
+  const updateCursorProps = useUpdateMyCursor(divRef)
+
   return (
-    <div className="mt-10 overflow-auto w-full h-full p-2 flex flex-col gap-2">
+    <div
+      ref={divRef}
+      className="relative mt-10 overflow-auto w-full h-full p-2 flex flex-col gap-2"
+      {...updateCursorProps}
+    >
+      <OthersCursors pitchId={pitchId} />
       <div className="sticky left-0 flex items-baseline gap-2">
         <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
           {(edit) => (
@@ -116,6 +133,53 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         <ArchivedScopeList pitchId={pitchId} />
       </ArchiveCollapsible>
     </div>
+  )
+}
+
+function useUpdateMyCursor(divRef: MutableRefObject<HTMLDivElement | null>) {
+  const updateMyPresence = useUpdateMyPresence()
+
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!divRef.current) return
+    const bounds = divRef.current.getBoundingClientRect()
+    const x = event.clientX - bounds.left
+    const y = event.clientY - bounds.top
+    updateMyPresence({
+      cursor: { x, y },
+    })
+  }
+  const onPointerLeave = () => {
+    updateMyPresence({ cursor: null })
+  }
+
+  return { onPointerMove, onPointerLeave }
+}
+
+function OthersCursors({ pitchId }: { pitchId: string }) {
+  const others = useOthers()
+
+  return (
+    <>
+      {others.map(
+        ({
+          connectionId,
+          presence: { cursor, activePitchId },
+          info: { fullName, username },
+        }) => {
+          if (!cursor) return null
+          if (activePitchId !== pitchId) return
+
+          return (
+            <Cursor
+              key={connectionId}
+              x={cursor.x}
+              y={cursor.y}
+              name={fullName ?? username}
+            />
+          )
+        }
+      )}
+    </>
   )
 }
 

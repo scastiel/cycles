@@ -8,6 +8,7 @@ import {
   useOthers,
   useSelf,
   useStorage,
+  useUpdateMyPresence,
 } from '../../../liveblocks.config'
 import { LiveList, LiveObject } from '@liveblocks/client'
 import {
@@ -96,9 +97,15 @@ function SelectedPitchContextProvider({
   initialSelectedPitchId,
   children,
 }: PropsWithChildren<{ initialSelectedPitchId?: string }>) {
-  const [selectedPitchId, setSelectedPitchId] = useState<string | undefined>(
+  const [selectedPitchId, _setSelectedPitchId] = useState<string | undefined>(
     initialSelectedPitchId
   )
+  const updateMyPresence = useUpdateMyPresence()
+
+  const setSelectedPitchId = (id: string | undefined) => {
+    updateMyPresence({ activePitchId: id ?? null })
+    _setSelectedPitchId(id)
+  }
 
   return (
     <SelectedPitchContext.Provider
