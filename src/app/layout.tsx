@@ -22,7 +22,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className="flex flex-col min-h-[100dvh]">
-          <header className="px-2 border-b h-10 flex items-center justify-between">
+          <header className="fixed top-0 left-0 right-0 px-2 border-b h-10 flex items-center justify-between bg-background z-10">
             <h1 className="font-bold">Cycles</h1>
             <div className="flex items-center">
               <SignedOut>

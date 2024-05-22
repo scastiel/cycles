@@ -129,7 +129,7 @@ function SidePanel() {
   const others = useOthers()
 
   return (
-    <div className="min-h-full flex flex-col">
+    <div className="h-[calc(100dvh-2.5rem)] fixed top-10 left-0 flex flex-col">
       <div className="flex-1 p-2 flex flex-col gap-2">
         <div className="flex gap-2 items-baseline">
           <BoardName />

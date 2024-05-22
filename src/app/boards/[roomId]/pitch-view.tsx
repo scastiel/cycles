@@ -78,7 +78,7 @@ export function PitchView({ pitchId }: { pitchId: string }) {
   const createScope = useCreateScopeMutation(pitchId)
 
   return (
-    <div className="overflow-auto w-full h-full p-2 flex flex-col gap-2">
+    <div className="mt-10 overflow-auto w-full h-full p-2 flex flex-col gap-2">
       <div className="sticky left-0 flex items-baseline gap-2">
         <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
           {(edit) => (
