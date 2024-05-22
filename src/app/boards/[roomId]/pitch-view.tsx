@@ -1,19 +1,14 @@
 import {
   Scope,
-  ScopeColor,
   TaskStatus,
-  scopeColors,
   useMutation,
-  useMyPresence,
   useOthers,
-  useOthersMapped,
   useStorage,
   useUpdateMyPresence,
 } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
-import { CSS } from '@dnd-kit/utilities'
 import {
   DndContext,
   closestCenter,
@@ -22,53 +17,30 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import {
   CSSProperties,
   MutableRefObject,
   PointerEvent,
   PropsWithChildren,
-  ReactNode,
-  Ref,
   forwardRef,
   useRef,
-  useState,
 } from 'react'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSubContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  ChevronRight,
-  Circle,
-  Ellipsis,
-  GripVertical,
-  Plus,
-} from 'lucide-react'
+import { Ellipsis, Plus } from 'lucide-react'
 import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
-import { ScopeIcon, getScopeColorClasses } from './scope-icon'
+import { ScopeIcon } from './scope-icon'
 import Cursor from '@/app/boards/[roomId]/cursor'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
@@ -83,8 +55,6 @@ export function PitchView({ pitchId }: { pitchId: string }) {
       .find((pitch) => pitch.get('id') === pitchId)
       ?.set('title', title)
   }, [])
-
-  const createScope = useCreateScopeMutation(pitchId)
 
   const divRef = useRef<HTMLDivElement | null>(null)
   const updateCursorProps = useUpdateMyCursor(divRef)
@@ -102,9 +72,6 @@ export function PitchView({ pitchId }: { pitchId: string }) {
             <div className="flex items-center gap-4">
               <h2 className="font-bold text-lg">{pitch.title}</h2>
               <div>
-                <Button onClick={createScope} variant="ghost" size="icon">
-                  <Plus className="size-4" />
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="icon" variant="ghost">
@@ -229,21 +196,6 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
     })
   )
 
-  const moveScope = useMutation(
-    ({ storage }, activeId: string, overId: string) => {
-      if (activeId !== overId) {
-        const getScopeIndex = (id: string) =>
-          storage.get('scopes').findIndex((pitch) => pitch.get('id') === id)
-        const activeIndex = getScopeIndex(activeId)
-        if (activeIndex !== -1) {
-          const overIndex = getScopeIndex(overId)
-          storage.get('scopes').move(activeIndex, overIndex)
-        }
-      }
-    },
-    []
-  )
-
   const updateTaskStatus = useUpdateTaskStatus()
 
   return (
@@ -266,23 +218,12 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
               }
               break
             }
-            case 'scope': {
-              if (
-                active.data.current?.type === 'scope' &&
-                over &&
-                active.id !== over.id
-              ) {
-                moveScope(String(active.id), String(over.id))
-              }
-            }
           }
         }}
       >
-        <SortableContext items={scopes} strategy={verticalListSortingStrategy}>
-          {scopes.map((scope) => (
-            <SortableScopeView key={scope.id} scope={scope} />
-          ))}
-        </SortableContext>
+        {scopes.map((scope) => (
+          <ScopeView key={scope.id} scope={scope} />
+        ))}
       </DndContext>
     </>
   )
@@ -321,131 +262,21 @@ export const useArchiveScopeMutation =
 export const useRestoreScopeMutation =
   createUseChangeScopeArchivedMutation(false)
 
-function SortableScopeView({ scope }: { scope: Scope }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: scope.id,
-      data: {
-        type: 'scope',
-        scopeId: scope.id,
-      },
-    })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      <ScopeView
-        scope={scope}
-        grip={
-          <div className="cursor-move" {...listeners} {...attributes}>
-            <GripVertical className="size-4" />
-          </div>
-        }
-      />
-    </div>
-  )
-}
-
 const ScopeView = forwardRef<
   HTMLDivElement,
-  { scope: Scope; grip?: ReactNode; style?: CSSProperties }
->(({ scope, grip, style }, forwardedRef) => {
-  const updateTitle = useMutation(({ storage }, title: string) => {
-    storage
-      .get('scopes')
-      .find((s) => s.get('id') === scope.id)
-      ?.set('title', title)
-  }, [])
-  const updateCore = useMutation(({ storage }, core: boolean) => {
-    storage
-      .get('scopes')
-      .find((s) => s.get('id') === scope.id)
-      ?.set('core', core)
-  }, [])
-  const updateColor = useMutation(({ storage }, color: ScopeColor) => {
-    storage
-      .get('scopes')
-      .find((s) => s.get('id') === scope.id)
-      ?.set('color', color)
-  }, [])
-
-  const archiveScope = useArchiveScopeMutation(scope.id)
-  const restoreScope = useRestoreScopeMutation(scope.id)
-  const createTask = useCreateTaskMutation(scope.id)
-
+  { scope: Scope; style?: CSSProperties }
+>(({ scope, style }, forwardedRef) => {
   return (
     <div
-      className="flex-1 flex flex-col gap-2"
+      className="flex-1 flex flex-col gap-2 mt-4"
       style={style}
       ref={forwardedRef}
     >
-      <div className="sticky w-fit left-0 flex items-center gap-4">
-        <StringViewAndEditor value={scope.title} updateValue={updateTitle}>
-          {(edit) => (
-            <>
-              <div className="flex items-center gap-2">
-                {grip}
-                <ScopeIcon scope={scope} />
-                <span className="text-sm font-semibold">{scope.title}</span>
-              </div>
-              <div>
-                <Button variant="ghost" size="icon" onClick={createTask}>
-                  <Plus className="size-4" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Ellipsis className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={scope.core === true}
-                      onCheckedChange={updateCore}
-                    >
-                      Core scope
-                    </DropdownMenuCheckboxItem>
-                    <div className="grid grid-cols-4">
-                      {scopeColors.map((color) => (
-                        <DropdownMenuItem
-                          key={color}
-                          onClick={() => updateColor(color)}
-                          className="group"
-                        >
-                          <Circle
-                            className={cn(
-                              'size-4 group-hover:opacity-100',
-                              scope.color !== color && 'opacity-20',
-                              getScopeColorClasses(color)
-                            )}
-                          />
-                        </DropdownMenuItem>
-                      ))}
-                    </div>
-                    <DropdownMenuSeparator />
-                    {scope.archived ? (
-                      <DropdownMenuItem onClick={restoreScope}>
-                        Restore
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={archiveScope}>
-                        Archive
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
-          )}
-        </StringViewAndEditor>
+      <div className="sticky w-fit left-0 flex items-center gap-2">
+        <ScopeIcon scope={scope} />
+        <span className="text-sm font-semibold">{scope.title}</span>
       </div>
-      <div className="mb-4">
+      <div>
         <ScopeTasksList scopeId={scope.id} />
       </div>
     </div>
@@ -519,6 +350,7 @@ function ScopeStatusTaskList({
     ? 'border-slate-200'
     : 'border-transparent'
   const droppableHoverClass2 = accepts && isOver ? 'border-slate-500' : ''
+  const createTask = useCreateTaskMutation(scopeId)
 
   return (
     <div
@@ -529,12 +361,22 @@ function ScopeStatusTaskList({
         width,
       }}
     >
-      <div className="text-xs uppercase text-muted-foreground -m-1">
-        {match(status)
-          .with('todo', () => 'To do')
-          .with('in_progress', () => 'In progress')
-          .with('done', () => 'Done')
-          .exhaustive()}
+      <div className="flex justify-between">
+        <div className="text-xs uppercase text-muted-foreground">
+          {match(status)
+            .with('todo', () => 'To do')
+            .with('in_progress', () => 'In progress')
+            .with('done', () => 'Done')
+            .exhaustive()}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6 -m-1 text-muted-foreground"
+          onClick={() => createTask(status)}
+        >
+          <Plus className="size-4" />
+        </Button>
       </div>
       <div
         className="grid items-start"
@@ -551,13 +393,13 @@ function ScopeStatusTaskList({
 
 function useCreateTaskMutation(scopeId: string) {
   return useMutation(
-    ({ storage }) => {
+    ({ storage }, status: TaskStatus = 'todo') => {
       storage.get('tasks').push(
         new LiveObject({
           id: nanoid(),
           title: 'New task',
           scopeId,
-          status: 'todo',
+          status,
           type: 'task',
         })
       )
