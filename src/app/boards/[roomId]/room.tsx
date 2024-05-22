@@ -55,6 +55,7 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { ArchiveCollapsible } from './archive-collapsible'
+import { cn } from '@/lib/utils'
 
 export function Room({ roomId }: { roomId: string }) {
   return (
@@ -120,15 +121,14 @@ function RoomContent() {
   const { selectedPitchId } = useSelectedPitchContext()
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="flex flex-1">
-      <ResizablePanel defaultSize={25}>
+    <div className="flex-1">
+      <div className="fixed top-10 left-0 bottom-0 w-[300px] border-r">
         <SidePanel />
-      </ResizablePanel>
-      <ResizableHandle />
-      <ResizablePanel defaultSize={75}>
+      </div>
+      <div className="ml-[300px]">
         {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      </div>
+    </div>
   )
 }
 
@@ -136,7 +136,7 @@ function SidePanel() {
   const others = useOthers()
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] fixed top-10 left-0 flex flex-col">
+    <div className="flex flex-col h-full">
       <div className="flex-1 p-2 flex flex-col gap-2">
         <div className="flex gap-2 items-baseline">
           <BoardName />
@@ -275,22 +275,24 @@ const PitchListItem = forwardRef<
   return (
     <li
       ref={forwardedRef}
-      className="flex-1 flex items-center bg-background hover:bg-slate-100 rounded"
+      className="flex-1 flex items-center bg-background hover:bg-slate-100 rounded w-full"
       style={style}
     >
       {grip}
       <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle}>
         {(edit) => (
-          <div className="flex-1 flex gap-1 items-center">
+          <div className="flex-1 flex gap-1 items-center overflow-hidden">
             <Button
               variant="link"
               onClick={() => setSelectedPitchId(pitch.id)}
-              className={
-                (selectedPitchId === pitch.id ? 'font-bold' : '') +
-                ' flex-1 text-left justify-start'
-              }
+              className={cn(
+                selectedPitchId === pitch.id && 'font-bold',
+                'flex-1 text-left justify-start overflow-hidden pr-0'
+              )}
             >
-              {pitch.title}
+              <span className="overflow-hidden text-ellipsis">
+                {pitch.title}
+              </span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
