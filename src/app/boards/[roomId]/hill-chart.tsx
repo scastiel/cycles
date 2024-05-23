@@ -82,6 +82,7 @@ export function PitchDashboard({ pitchId }: { pitchId: string }) {
       <div className="w-fit flex gap-2">
         <ScopeList scopes={scopes} pitchId={pitchId} />
         <HillChart scopes={scopes} />
+        <PriorityMatrix scopes={scopes} />
       </div>
     </HoveredScopeContextProvider>
   )
@@ -310,17 +311,7 @@ function HillChart({ scopes }: { scopes: Scope[] }) {
                       .filter((scope) => (scope.progress ?? 0) === i)
                       .map((scope) => (
                         <DraggableScopeIcon scopeId={scope.id} key={scope.id}>
-                          <div
-                            className={cn(
-                              'rounded-full',
-                              hoveredScopeId === scope.id &&
-                                'outline outline-slate-500'
-                            )}
-                            onMouseEnter={() => setHoveredScopeId(scope.id)}
-                            onMouseLeave={() => setHoveredScopeId(null)}
-                          >
-                            <ScopeIcon scope={scope} />
-                          </div>
+                          <ReactiveScopeIcon scope={scope} />
                         </DraggableScopeIcon>
                       ))}
                   </div>
@@ -330,6 +321,23 @@ function HillChart({ scopes }: { scopes: Scope[] }) {
         </div>
       </div>
     </HillChartDndContext>
+  )
+}
+
+function ReactiveScopeIcon({ scope }: { scope: Scope }) {
+  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
+
+  return (
+    <div
+      className={cn(
+        'rounded-full',
+        hoveredScopeId === scope.id && 'outline outline-slate-500'
+      )}
+      onMouseEnter={() => setHoveredScopeId(scope.id)}
+      onMouseLeave={() => setHoveredScopeId(null)}
+    >
+      <ScopeIcon scope={scope} />
+    </div>
   )
 }
 
@@ -448,5 +456,145 @@ function DraggableScopeIcon({
     >
       {children}
     </div>
+  )
+}
+
+function PriorityMatrix({ scopes }: { scopes: Scope[] }) {
+  return (
+    <div className="border w-[400px] aspect-video flex flex-col relative">
+      <PriorityMatrixBackground />
+      <h3 className="text-xs uppercase text-muted-foreground p-2">
+        Priority matrix
+      </h3>
+      <PriorityMatrixGrid scopes={scopes} />
+    </div>
+  )
+}
+
+function PriorityMatrixGrid({ scopes }: { scopes: Scope[] }) {
+  const sensors = useSensors(useSensor(PointerSensor))
+  const updateScopeEffortImpact = useMutation(
+    ({ storage }, scopeId: string, effort: number, impact: number) => {
+      storage
+        .get('scopes')
+        .find((scope) => scope.get('id') === scopeId)
+        ?.update({ effort, impact })
+    },
+    []
+  )
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={rectIntersection}
+      onDragEnd={(event) => {
+        if (event.over) {
+          const scopeId = event.active.id as string
+          const { impact, effort } = event.over.data.current ?? {}
+          updateScopeEffortImpact(scopeId, effort, impact)
+        }
+      }}
+    >
+      <div className="flex-1 ml-6 mt-3 mb-6 mr-4 grid grid-cols-11 grid-rows-11 gap-1">
+        {Array(11)
+          .fill(null)
+          .map((_, impact) =>
+            Array(11)
+              .fill(null)
+              .map((_, effort) => (
+                <DroppablePriorityMatrixBox
+                  impact={impact}
+                  effort={effort}
+                  key={`${impact}-${effort}`}
+                >
+                  {scopes
+                    .filter(
+                      (scope) =>
+                        (scope.impact ?? 5) === impact &&
+                        (scope.effort ?? 5) === effort
+                    )
+                    .map((scope) => (
+                      <div
+                        key={scope.id}
+                        className="w-2 h-0 flex items-center justify-center"
+                      >
+                        <DraggableScopeIcon scopeId={scope.id}>
+                          <ReactiveScopeIcon scope={scope} />
+                        </DraggableScopeIcon>
+                      </div>
+                    ))}
+                </DroppablePriorityMatrixBox>
+              ))
+          )}
+      </div>
+    </DndContext>
+  )
+}
+
+function DroppablePriorityMatrixBox({
+  impact,
+  effort,
+  children,
+}: PropsWithChildren<{ impact: number; effort: number }>) {
+  const { active, isOver, setNodeRef } = useDroppable({
+    id: impact * 100 + effort,
+    data: { impact, effort },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'flex justify-center items-center border-2 border-transparent',
+        active && 'border-dashed border-slate-200',
+        isOver && 'border-slate-300'
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+function PriorityMatrixBackground() {
+  return (
+    <>
+      <svg
+        className="absolute inset-0 -z-10"
+        viewBox="0 0 160 90"
+        preserveAspectRatio="none"
+      >
+        <path d="M 8 82 L 8 17" className="stroke-border fill-none" />
+        <path
+          d="M 8 15 L 6 17 L 10 17 L 8 15"
+          className="stroke-[0.1px] stroke-border fill-border"
+        />
+        <path d="M 8 82 L 153 82" className="stroke-border fill-none" />
+        <path
+          d="M 155 82 L 153 80 L 153 84 L 155 82"
+          className="stroke-[0.1px] stroke-border fill-border"
+        />
+      </svg>
+      <div className="absolute left-0 top-10 bottom-5 h-5 w-[160px] text-muted-foreground grid grid-cols-3 uppercase items-end -translate-x-[73px] translate-y-[75px] -rotate-90">
+        <div className="text-[8px] text-left">
+          <span>Low</span>
+        </div>
+        <div className="text-[9px] text-center">
+          <span>Impact</span>
+        </div>
+        <div className="text-[8px] text-right">
+          <span>High</span>
+        </div>
+      </div>
+      <div className="absolute left-5 bottom-0 h-5 w-[355px] text-muted-foreground grid grid-cols-3 uppercase items-center">
+        <div className="text-[8px] text-left">
+          <span>Low</span>
+        </div>
+        <div className="text-[9px] text-center">
+          <span>Effort</span>
+        </div>
+        <div className="text-[8px] text-right">
+          <span>High</span>
+        </div>
+      </div>
+    </>
   )
 }

@@ -5,7 +5,14 @@ import { match } from 'ts-pattern'
 
 export function ScopeIcon({ scope }: { scope: Scope }) {
   const Icon = scope.core ? Star : Circle
-  return <Icon className={cn('size-4', getScopeColorClasses(scope.color))} />
+  return (
+    <Icon
+      className={cn(
+        'size-4 [&_polygon]:scale-[130%] [&_polygon]:-translate-x-[4px] [&_polygon]:-translate-y-[4px] [&_circle]:stroke-white [&_circle]:stroke-2 [&_polygon]:stroke-white [&_polygon]:stroke-2',
+        getScopeColorClasses(scope.color)
+      )}
+    />
+  )
 }
 
 export function getScopeColorClasses(color?: ScopeColor): string {
