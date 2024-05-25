@@ -19,6 +19,7 @@ import {
 import { LiveList, LiveObject } from '@liveblocks/client'
 import { Ellipsis } from 'lucide-react'
 import { nanoid } from 'nanoid'
+import { format, isSameDay, isThisWeek, isToday, isYesterday } from 'date-fns'
 
 export function SnapshotsDialogContent({ pitchId }: { pitchId: string }) {
   const scopes = useStorage((root) =>
@@ -72,12 +73,7 @@ export function SnapshotsDialogContent({ pitchId }: { pitchId: string }) {
             <div key={snapshot.id} className="flex flex-col gap-4">
               <div className="border-t border-b sticky top-0 bg-gray-50 z-10 px-6 py-1">
                 <h3 className="sticky left-0 w-fit font-semibold text-sm flex items-center gap-2">
-                  <div>
-                    {new Date(snapshot.date).toLocaleString('en-US', {
-                      dateStyle: 'long',
-                      timeStyle: 'short',
-                    })}
-                  </div>
+                  <div>{formatDate(new Date(snapshot.date))}</div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="size-6">
@@ -108,4 +104,20 @@ export function SnapshotsDialogContent({ pitchId }: { pitchId: string }) {
       </div>
     </HoveredScopeContextProvider>
   )
+}
+
+function formatDate(date: Date) {
+  const time = date.toLocaleTimeString('en-US', {
+    timeStyle: 'short',
+  })
+  if (isToday(date)) {
+    return `Today at ${time}`
+  }
+  if (isYesterday(date)) {
+    return `Yesterday at ${time}`
+  }
+  if (isThisWeek(date)) {
+    return `Last ${format(date, 'EEEE')} at ${time}`
+  }
+  return `${format(date, 'LLLL do')} at ${time}`
 }
