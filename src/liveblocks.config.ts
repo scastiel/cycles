@@ -65,6 +65,13 @@ export type Pitch = {
   title: string
   archived?: boolean
 }
+export type PitchSnapshot = {
+  id: string
+  pitchId: string
+  date: string
+  archived?: boolean
+  scopes: Scope[]
+}
 export type Scope = {
   id: string
   pitchId: string
@@ -105,6 +112,7 @@ export type Storage = {
   pitches: LiveList<LiveObject<Pitch>>
   scopes: LiveList<LiveObject<Scope>>
   tasks: LiveList<LiveObject<Task>>
+  pitchSnapshots?: LiveList<LiveObject<PitchSnapshot>>
 }
 
 // Optionally, UserMeta represents static/readonly metadata on each user, as

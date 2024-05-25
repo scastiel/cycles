@@ -1,12 +1,14 @@
 import {
+  PitchSnapshot,
   Scope,
   TaskStatus,
+  useList,
   useMutation,
   useOthers,
   useStorage,
   useUpdateMyPresence,
 } from '@/liveblocks.config'
-import { LiveObject } from '@liveblocks/client'
+import { LiveList, LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
 import {
@@ -42,6 +44,14 @@ import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon } from './scope-icon'
 import Cursor from '@/app/boards/[roomId]/cursor'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -72,18 +82,26 @@ export function PitchView({ pitchId }: { pitchId: string }) {
             <div className="flex items-center gap-4">
               <h2 className="font-bold text-lg">{pitch.title}</h2>
               <div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="icon" variant="ghost">
-                      <Ellipsis className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={edit}>
-                      Rename pitch
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Dialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost">
+                        <Ellipsis className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={edit}>
+                        Rename pitch
+                      </DropdownMenuItem>
+                      <DialogTrigger asChild>
+                        <DropdownMenuItem>Snapshots…</DropdownMenuItem>
+                      </DialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <DialogContent className="w-[1266px] max-w-[calc(100vw-4rem)]">
+                    <SnapshotsDialogContent pitchId={pitch.id} />
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           )}

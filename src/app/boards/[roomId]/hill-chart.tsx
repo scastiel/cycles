@@ -54,7 +54,7 @@ const HoveredScopeContext = createContext<{
   setHoveredScopeId: (id: string | null) => void
 } | null>(null)
 
-function HoveredScopeContextProvider({ children }: PropsWithChildren) {
+export function HoveredScopeContextProvider({ children }: PropsWithChildren) {
   const [hoveredScopeId, setHoveredScopeId] = useState<string | null>(null)
   return (
     <HoveredScopeContext.Provider value={{ hoveredScopeId, setHoveredScopeId }}>
@@ -79,12 +79,26 @@ export function PitchDashboard({ pitchId }: { pitchId: string }) {
 
   return (
     <HoveredScopeContextProvider>
-      <div className="w-fit flex gap-2">
-        <ScopeList scopes={scopes} pitchId={pitchId} />
-        <HillChart scopes={scopes} />
-        <PriorityMatrix scopes={scopes} />
-      </div>
+      <PitchDashboardView pitchId={pitchId} scopes={scopes} />
     </HoveredScopeContextProvider>
+  )
+}
+
+export function PitchDashboardView({
+  pitchId,
+  scopes,
+  disableEdit,
+}: {
+  pitchId: string
+  scopes: Scope[]
+  disableEdit?: boolean
+}) {
+  return (
+    <div className="w-fit flex gap-2">
+      <ScopeList scopes={scopes} pitchId={pitchId} disableEdit={disableEdit} />
+      <HillChart scopes={scopes} disableEdit={disableEdit} />
+      <PriorityMatrix scopes={scopes} disableEdit={disableEdit} />
+    </div>
   )
 }
 
@@ -126,7 +140,13 @@ function ScopeListDndContext({
   )
 }
 
-function SortableScopeItem({ scope }: { scope: Scope }) {
+function SortableScopeItem({
+  scope,
+  disableEdit,
+}: {
+  scope: Scope
+  disableEdit?: boolean
+}) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: scope.id })
   const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
@@ -147,28 +167,32 @@ function SortableScopeItem({ scope }: { scope: Scope }) {
       onMouseEnter={() => setHoveredScopeId(scope.id)}
       onMouseLeave={() => setHoveredScopeId(null)}
     >
-      <div
-        className="hidden group-hover:block cursor-move"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="size-4" />
-      </div>
-      <div className="group-hover:hidden">
+      {!disableEdit && (
+        <div
+          className="hidden group-hover:block cursor-move"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="size-4" />
+        </div>
+      )}
+      <div className={cn(!disableEdit && 'group-hover:hidden')}>
         <ScopeIcon scope={scope} />
       </div>
       <span className="text-sm flex-1 text-nowrap text-ellipsis overflow-hidden">
         {scope.title}
       </span>
-      <ScopeDropdownMenu scope={scope}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6 opacity-10 group-hover:opacity-100"
-        >
-          <Ellipsis className="size-4" />
-        </Button>
-      </ScopeDropdownMenu>
+      {!disableEdit && (
+        <ScopeDropdownMenu scope={scope}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 opacity-10 group-hover:opacity-100"
+          >
+            <Ellipsis className="size-4" />
+          </Button>
+        </ScopeDropdownMenu>
+      )}
     </div>
   )
 }
@@ -264,7 +288,15 @@ function ScopeDropdownMenu({
   )
 }
 
-function ScopeList({ scopes, pitchId }: { scopes: Scope[]; pitchId: string }) {
+function ScopeList({
+  scopes,
+  pitchId,
+  disableEdit,
+}: {
+  scopes: Scope[]
+  pitchId: string
+  disableEdit?: boolean
+}) {
   const createScope = useCreateScopeMutation(pitchId)
 
   return (
@@ -274,18 +306,24 @@ function ScopeList({ scopes, pitchId }: { scopes: Scope[]; pitchId: string }) {
           <h3 className="text-xs uppercase mb-2 text-muted-foreground">
             Scope list
           </h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            onClick={createScope}
-          >
-            <Plus className="size-4 text-muted-foreground" />
-          </Button>
+          {!disableEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6"
+              onClick={createScope}
+            >
+              <Plus className="size-4 text-muted-foreground" />
+            </Button>
+          )}
         </div>
         <ul className="flex flex-col gap-2">
           {scopes.map((scope) => (
-            <SortableScopeItem key={scope.id} scope={scope} />
+            <SortableScopeItem
+              key={scope.id}
+              scope={scope}
+              disableEdit={disableEdit}
+            />
           ))}
         </ul>
       </div>
@@ -293,9 +331,13 @@ function ScopeList({ scopes, pitchId }: { scopes: Scope[]; pitchId: string }) {
   )
 }
 
-function HillChart({ scopes }: { scopes: Scope[] }) {
-  const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
-
+function HillChart({
+  scopes,
+  disableEdit,
+}: {
+  scopes: Scope[]
+  disableEdit?: boolean
+}) {
   return (
     <HillChartDndContext>
       <div className="w-[400px] aspect-video border relative">
@@ -309,11 +351,15 @@ function HillChart({ scopes }: { scopes: Scope[] }) {
                   <div className="h-full flex flex-col flex-wrap justify-end items-center gap-1 p-1 -mx-2">
                     {scopes
                       .filter((scope) => (scope.progress ?? 0) === i)
-                      .map((scope) => (
-                        <DraggableScopeIcon scopeId={scope.id} key={scope.id}>
-                          <ReactiveScopeIcon scope={scope} />
-                        </DraggableScopeIcon>
-                      ))}
+                      .map((scope) =>
+                        disableEdit ? (
+                          <ReactiveScopeIcon key={scope.id} scope={scope} />
+                        ) : (
+                          <DraggableScopeIcon scopeId={scope.id} key={scope.id}>
+                            <ReactiveScopeIcon scope={scope} />
+                          </DraggableScopeIcon>
+                        )
+                      )}
                   </div>
                 </DroppableProgressBox>
               </div>
@@ -459,19 +505,31 @@ function DraggableScopeIcon({
   )
 }
 
-function PriorityMatrix({ scopes }: { scopes: Scope[] }) {
+function PriorityMatrix({
+  scopes,
+  disableEdit,
+}: {
+  scopes: Scope[]
+  disableEdit?: boolean
+}) {
   return (
     <div className="border w-[400px] aspect-video flex flex-col relative">
       <PriorityMatrixBackground />
       <h3 className="text-xs uppercase text-muted-foreground p-2">
         Priority matrix
       </h3>
-      <PriorityMatrixGrid scopes={scopes} />
+      <PriorityMatrixGrid scopes={scopes} disableEdit={disableEdit} />
     </div>
   )
 }
 
-function PriorityMatrixGrid({ scopes }: { scopes: Scope[] }) {
+function PriorityMatrixGrid({
+  scopes,
+  disableEdit,
+}: {
+  scopes: Scope[]
+  disableEdit?: boolean
+}) {
   const sensors = useSensors(useSensor(PointerSensor))
   const updateScopeEffortImpact = useMutation(
     ({ storage }, scopeId: string, effort: number, impact: number) => {
@@ -518,9 +576,13 @@ function PriorityMatrixGrid({ scopes }: { scopes: Scope[] }) {
                         key={scope.id}
                         className="w-2 h-0 flex items-center justify-center"
                       >
-                        <DraggableScopeIcon scopeId={scope.id}>
+                        {disableEdit ? (
                           <ReactiveScopeIcon scope={scope} />
-                        </DraggableScopeIcon>
+                        ) : (
+                          <DraggableScopeIcon scopeId={scope.id}>
+                            <ReactiveScopeIcon scope={scope} />
+                          </DraggableScopeIcon>
+                        )}
                       </div>
                     ))}
                 </DroppablePriorityMatrixBox>
