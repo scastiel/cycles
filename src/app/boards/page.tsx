@@ -97,7 +97,11 @@ function CreateBoardButton({ roomPrefix }: { roomPrefix: string }) {
               name="slug"
               required
               minLength={5}
+              pattern="[a-z0-9\-]*"
             />
+            <p className="text-muted-foreground text-xs">
+              Must contain only lowercase letters, digits, and dashes.
+            </p>
           </section>
         </div>
 
@@ -150,21 +154,20 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
                   required
                 />
               </section>
-              <section className="flex flex-col">
-                <Label htmlFor="slug" className="mb-2">
-                  Slug
-                </Label>
+              <section className="flex flex-col gap-2">
+                <Label htmlFor="slug">Slug</Label>
                 <Input
                   name="slug"
                   id="slug"
                   defaultValue={slug}
                   required
                   minLength={5}
+                  pattern="[a-z0-9\-]*"
                 />
-                <p>
-                  <small>
-                    Warning: changing the board slug will change its URL.
-                  </small>
+                <p className="text-muted-foreground text-xs">
+                  Must contain only lowercase letters, digits, and dashes.
+                  <br />
+                  Warning: changing the board slug will change its URL.
                 </p>
               </section>
               <section className="flex flex-col">
