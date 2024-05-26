@@ -147,6 +147,9 @@ function RoomContent({ boardTitle }: { boardTitle: string }) {
 function SidePanel({ boardTitle }: { boardTitle: string }) {
   const others = useOthers()
   const createPitch = useCreatePitch()
+  const archivePitchesCount = useStorage(
+    (root) => root.pitches.filter((p) => p.archived).length
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -162,9 +165,11 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
         <div className="flex-1">
           <PitchList />
         </div>
-        <div className="mt-6">
-          <ArchivedPitches />
-        </div>
+        {archivePitchesCount > 0 && (
+          <div className="mt-6">
+            <ArchivedPitches count={archivePitchesCount} />
+          </div>
+        )}
       </div>
       <div className="p-2">
         <p className="text-center text-xs text-muted-foreground">
@@ -175,9 +180,9 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
   )
 }
 
-function ArchivedPitches() {
+function ArchivedPitches({ count }: { count: number }) {
   return (
-    <ArchiveCollapsible label="Archived pitches">
+    <ArchiveCollapsible label={<>Archived pitches ({count})</>}>
       <ArchivedPitchList />
     </ArchiveCollapsible>
   )
