@@ -373,7 +373,7 @@ function ScopeStatusTaskList({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col gap-2 border-2 border-dashed bg-slate-50 ${droppableHoverClass1} ${droppableHoverClass2}`}
+      className={`flex flex-col gap-2 border-2 border-dashed bg-slate-50 dark:bg-slate-900 ${droppableHoverClass1} ${droppableHoverClass2}`}
       style={{
         padding,
         width,

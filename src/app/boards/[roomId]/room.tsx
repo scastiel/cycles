@@ -298,7 +298,7 @@ const PitchListItem = forwardRef<
   return (
     <li
       ref={forwardedRef}
-      className="flex-1 flex items-center bg-background hover:bg-slate-100 rounded w-full"
+      className="flex-1 flex items-center bg-background hover:bg-muted rounded w-full"
       style={style}
     >
       {grip}

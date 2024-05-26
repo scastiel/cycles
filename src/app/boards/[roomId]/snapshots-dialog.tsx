@@ -71,7 +71,7 @@ export function SnapshotsDialogContent({ pitchId }: { pitchId: string }) {
         <div className="flex flex-col gap-4 w-fit">
           {snapshots.map((snapshot) => (
             <div key={snapshot.id} className="flex flex-col gap-4">
-              <div className="border-t border-b sticky top-0 bg-gray-50 z-10 px-6 py-1">
+              <div className="border-t border-b sticky top-0 bg-muted z-10 px-6 py-1">
                 <h3 className="sticky left-0 w-fit font-semibold text-sm flex items-center gap-2">
                   <div>{formatDate(new Date(snapshot.date))}</div>
                   <DropdownMenu>

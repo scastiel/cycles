@@ -119,7 +119,7 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
     : null
 
   return (
-    <div className="p-2 hover:bg-gray-50 flex gap-1">
+    <div className="p-2 hover:bg-muted flex gap-1">
       <div className="flex flex-col gap-1 flex-1">
         <Link href={`/boards/${slug}`} className="text-sm font-semibold">
           {room.metadata.title ?? 'No title'}

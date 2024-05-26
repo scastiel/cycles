@@ -162,7 +162,7 @@ function SortableScopeItem({
       style={style}
       className={cn(
         'flex gap-2 items-center p-1 -m-1 rounded group',
-        hoveredScopeId === scope.id && 'bg-slate-100'
+        hoveredScopeId === scope.id && 'bg-muted'
       )}
       onMouseEnter={() => setHoveredScopeId(scope.id)}
       onMouseLeave={() => setHoveredScopeId(null)}
@@ -404,7 +404,7 @@ function HillBackground() {
           C  40 80,  50 35,  80 35
           C 110 35, 120 80, 160 90
         "
-          className="fill-gray-50 stroke-slate-300 stroke-1"
+          className="fill-muted stroke-border stroke-1"
         />
         <path
           d="

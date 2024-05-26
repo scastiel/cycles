@@ -60,9 +60,9 @@ export function TaskView({ task }: { task: Task }) {
     : undefined
 
   const bgColor = match(task.type)
-    .with('task', () => 'bg-yellow-50')
-    .with('optional', () => 'bg-blue-50')
-    .with('bug', () => 'bg-red-50')
+    .with('task', () => 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50')
+    .with('optional', () => 'bg-blue-50 dark:bg-blue-900 dark:bg-opacity-50')
+    .with('bug', () => 'bg-red-50 dark:bg-red-900 dark:bg-opacity-50')
     .otherwise(() => 'bg-white')
 
   return (
@@ -106,7 +106,7 @@ export function TaskView({ task }: { task: Task }) {
       </div>
       <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
         {(edit) => (
-          <div className="flex flex-col gap-1 hover:bg-slate-500 hover:bg-opacity-5">
+          <div className="flex flex-col gap-1 hover:bg-muted hover:bg-opacity-5">
             <div role="button" onClick={edit} className="text-sm">
               {task.title}
             </div>
