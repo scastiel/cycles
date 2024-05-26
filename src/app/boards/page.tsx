@@ -1,13 +1,20 @@
+import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
 import { BoardContextMenu } from '@/app/boards/board-context-menu'
 import { CreateBoardDialog } from '@/app/boards/create-board-dialog'
 import { OrganizationSelector } from '@/app/boards/organization-selector'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { liveblocks } from '@/lib/liveblocks'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { RoomInfo } from '@liveblocks/node'
+import { groupBy } from 'lodash'
 import { Ellipsis } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
@@ -22,23 +29,41 @@ export default async function OrganizationsPage() {
     query: `roomId^"${roomPrefix}:"`,
   })
 
+  const { active: activeRooms, archived: archivedRooms } = groupBy(
+    rooms,
+    (room) => (room.metadata.archived ? 'archived' : 'active')
+  )
+
   return (
     <main className="mt-16 w-full max-w-screen-md mx-auto">
       <div className="mb-4 flex justify-between items-center">
         <h1 className="font-bold">Boards</h1>
         <CreateBoardButton roomPrefix={roomPrefix} />
       </div>
-      {rooms.length === 0 && (
+      {!activeRooms && (
         <div className="flex items-center justify-center border p-2 rounded-lg text-sm text-muted-foreground text-center h-40">
           There is not board yet.
         </div>
       )}
-      {rooms.length > 0 && (
+      {activeRooms && (
         <ul className="border p-2 rounded-lg">
-          {rooms.map((room) => (
+          {activeRooms.map((room) => (
             <BoardListItem key={room.id} room={room} />
           ))}
         </ul>
+      )}
+      {archivedRooms && (
+        <div className="mt-8">
+          <ArchiveCollapsible
+            label={<>Archived boards ({archivedRooms.length})</>}
+          >
+            <ul className="border p-2 rounded-lg">
+              {archivedRooms.map((room) => (
+                <BoardListItem key={room.id} room={room} />
+              ))}
+            </ul>
+          </ArchiveCollapsible>
+        </div>
       )}
     </main>
   )
@@ -107,6 +132,8 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
         </div>
       </div>
       <BoardContextMenu
+        roomId={room.id}
+        archived={Boolean(room.metadata.archived)}
         boardSettingsForm={
           <form className="flex flex-col gap-4" action={updateBoard}>
             <input type="hidden" name="roomId" value={room.id} />
@@ -142,15 +169,9 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
               </section>
               <section className="flex flex-col">
                 <Label htmlFor="orgId" className="mb-2">
-                  Organization ID
+                  Organization
                 </Label>
                 <OrganizationSelector />
-                <p>
-                  <small className="text-red-600">
-                    Warning: changing this value will transfer the board to
-                    another organization!
-                  </small>
-                </p>
               </section>
             </div>
             <DialogFooter>

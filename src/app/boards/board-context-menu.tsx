@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  archiveBoard,
+  restoreBoard,
+} from '@/app/boards/board-context-menu.actions'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import {
@@ -12,8 +16,12 @@ import { Ellipsis } from 'lucide-react'
 import { ReactNode } from 'react'
 
 export function BoardContextMenu({
+  roomId,
+  archived,
   boardSettingsForm,
 }: {
+  roomId: string
+  archived: boolean
   boardSettingsForm: ReactNode
 }) {
   return (
@@ -28,6 +36,24 @@ export function BoardContextMenu({
           <DialogTrigger asChild>
             <DropdownMenuItem>Board settings…</DropdownMenuItem>
           </DialogTrigger>
+          {archived ? (
+            <DropdownMenuItem
+              onClick={async () => {
+                await restoreBoard(roomId)
+              }}
+            >
+              Restore board
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={async () => {
+                await archiveBoard(roomId)
+              }}
+            >
+              Archive board
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent>{boardSettingsForm}</DialogContent>
