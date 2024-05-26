@@ -6,6 +6,8 @@ import {
   Storage,
   useMutation,
   useOthers,
+  useRoom,
+  useRoomInfo,
   useSelf,
   useStorage,
   useUpdateMyPresence,
@@ -57,10 +59,16 @@ import {
 import { ArchiveCollapsible } from './archive-collapsible'
 import { cn } from '@/lib/utils'
 
-export function Room({ roomId }: { roomId: string }) {
+export function Room({
+  roomId,
+  boardTitle,
+}: {
+  roomId: string
+  boardTitle: string
+}) {
   return (
     <RoomProvider
-      id={'demo:' + decodeURIComponent(roomId)}
+      id={roomId}
       initialPresence={{}}
       initialStorage={{
         info: new LiveObject({ name: 'New board' }),
@@ -69,10 +77,14 @@ export function Room({ roomId }: { roomId: string }) {
         tasks: new LiveList(),
       }}
     >
-      <ClientSideSuspense fallback={<div className="p-2">Loading…</div>}>
+      <ClientSideSuspense
+        fallback={
+          <main className="mt-16 w-full max-w-screen-md mx-auto">Loading…</main>
+        }
+      >
         {() => (
           <SelectedPitchContextProvider>
-            <RoomContent />
+            <RoomContent boardTitle={boardTitle} />
           </SelectedPitchContextProvider>
         )}
       </ClientSideSuspense>
@@ -117,13 +129,13 @@ function SelectedPitchContextProvider({
   )
 }
 
-function RoomContent() {
+function RoomContent({ boardTitle }: { boardTitle: string }) {
   const { selectedPitchId } = useSelectedPitchContext()
 
   return (
     <div className="flex-1">
       <div className="fixed top-10 left-0 bottom-0 w-[300px] border-r">
-        <SidePanel />
+        <SidePanel boardTitle={boardTitle} />
       </div>
       <div className="ml-[300px]">
         {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
@@ -132,14 +144,20 @@ function RoomContent() {
   )
 }
 
-function SidePanel() {
+function SidePanel({ boardTitle }: { boardTitle: string }) {
   const others = useOthers()
+  const createPitch = useCreatePitch()
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 p-2 flex flex-col gap-2">
         <div className="flex gap-2 items-baseline">
-          <BoardName />
+          <div className="w-full flex items-center">
+            <h2 className="flex-1 font-bold text-lg">{boardTitle}</h2>
+            <Button size="icon" variant="ghost" onClick={createPitch}>
+              <PlusIcon className="size-4" />
+            </Button>
+          </div>
         </div>
         <div className="flex-1">
           <PitchList />
@@ -333,37 +351,4 @@ function useCreatePitch() {
       .get('pitches')
       .push(new LiveObject({ id: nanoid(), title: 'New pitch' }))
   }, [])
-}
-
-function BoardName() {
-  const name = useStorage((root) => root.info.name)
-  const updateName = useMutation(({ storage }, name: string) => {
-    storage.get('info').set('name', name)
-  }, [])
-  const createPitch = useCreatePitch()
-
-  return (
-    <div className="w-full flex items-center">
-      <StringViewAndEditor value={name} updateValue={updateName}>
-        {(edit) => (
-          <>
-            <h2 className="flex-1 font-bold text-lg">{name}</h2>
-            <Button size="icon" variant="ghost" onClick={createPitch}>
-              <PlusIcon className="size-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost">
-                  <Ellipsis className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        )}
-      </StringViewAndEditor>
-    </div>
-  )
 }

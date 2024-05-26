@@ -2,12 +2,14 @@ import type { Metadata } from 'next'
 import './globals.css'
 import {
   ClerkProvider,
+  OrganizationSwitcher,
   SignInButton,
   SignedIn,
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Cycles',
@@ -31,7 +33,16 @@ export default function RootLayout({
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <UserButton />
+                <div className="flex gap-2">
+                  <Button variant="link" asChild>
+                    <Link href="/boards">Boards</Link>
+                  </Button>
+                  <OrganizationSwitcher
+                    afterSelectOrganizationUrl="/boards"
+                    afterSelectPersonalUrl="/boards"
+                  />
+                  <UserButton />
+                </div>
               </SignedIn>
             </div>
           </header>

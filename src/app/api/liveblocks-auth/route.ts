@@ -1,14 +1,9 @@
-import { env } from '@/env'
+import { liveblocks } from '@/lib/liveblocks'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { Liveblocks } from '@liveblocks/node'
 import { NextResponse } from 'next/server'
 
-const liveblocks = new Liveblocks({
-  secret: env.LIVEBLOCKS_SECRET_KEY,
-})
-
 export async function POST(request: Request) {
-  const { userId } = auth()
+  const { userId, orgId } = auth()
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
@@ -24,8 +19,7 @@ export async function POST(request: Request) {
   })
 
   // Use a naming pattern to allow access to rooms with wildcards
-  // Giving the user read access on their org, and write access on their group
-  session.allow(`demo:*`, session.FULL_ACCESS)
+  session.allow(`${orgId ?? userId}:*`, session.FULL_ACCESS)
 
   // Authorize the user and return the result
   const { status, body } = await session.authorize()
