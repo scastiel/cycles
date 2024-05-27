@@ -170,12 +170,14 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
                   Warning: changing the board slug will change its URL.
                 </p>
               </section>
-              <section className="flex flex-col">
-                <Label htmlFor="orgId" className="mb-2">
-                  Organization
-                </Label>
-                <OrganizationSelector />
-              </section>
+              <div className="hidden">
+                <section className="hidden flex-col">
+                  <Label htmlFor="orgId" className="mb-2">
+                    Organization
+                  </Label>
+                  <OrganizationSelector />
+                </section>
+              </div>
             </div>
             <DialogFooter>
               <Button type="submit">Save</Button>
