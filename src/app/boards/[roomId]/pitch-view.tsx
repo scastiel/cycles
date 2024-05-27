@@ -72,7 +72,7 @@ export function PitchView({ pitchId }: { pitchId: string }) {
   return (
     <div
       ref={divRef}
-      className="relative mt-10 overflow-auto w-full h-full p-2 flex flex-col gap-2"
+      className="relative mt-10 overflow-auto w-full h-full px-4 py-2 flex flex-col gap-2"
       {...updateCursorProps}
     >
       <OthersCursors pitchId={pitchId} />
