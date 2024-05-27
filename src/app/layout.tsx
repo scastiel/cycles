@@ -49,6 +49,12 @@ export default function RootLayout({
                       <OrganizationSwitcher
                         afterSelectOrganizationUrl="/boards"
                         afterSelectPersonalUrl="/boards"
+                        appearance={{
+                          elements: {
+                            organizationSwitcherPopoverActionButton__createOrganization:
+                              { display: 'none' },
+                          },
+                        }}
                       />
                     </div>
                     <div className="flex items-center size-6 self-center">
