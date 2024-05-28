@@ -69,10 +69,17 @@ export function PitchView({ pitchId }: { pitchId: string }) {
   const divRef = useRef<HTMLDivElement | null>(null)
   const updateCursorProps = useUpdateMyCursor(divRef)
 
+  const archivedScopesCount = useStorage(
+    (root) =>
+      root.scopes.filter(
+        (scope) => scope.pitchId === pitch.id && scope.archived
+      ).length
+  )
+
   return (
     <div
       ref={divRef}
-      className="relative mt-10 overflow-auto w-full h-full px-4 py-2 flex flex-col gap-2"
+      className="flex-1 relative mt-10 overflow-auto w-full px-4 py-2 flex flex-col gap-2"
       {...updateCursorProps}
     >
       <OthersCursors pitchId={pitchId} />
@@ -114,9 +121,13 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         <ActiveScopeList pitchId={pitchId} />
       </div>
 
-      <ArchiveCollapsible label="Archived scopes">
-        <ArchivedScopeList pitchId={pitchId} />
-      </ArchiveCollapsible>
+      {archivedScopesCount > 0 && (
+        <ArchiveCollapsible
+          label={<>Archived scopes ({archivedScopesCount})</>}
+        >
+          <ArchivedScopeList pitchId={pitchId} />
+        </ArchiveCollapsible>
+      )}
     </div>
   )
 }

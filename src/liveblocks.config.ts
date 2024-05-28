@@ -108,7 +108,6 @@ export type TaskType = 'task' | 'optional' | 'bug'
 export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,
   // ...
-  info: LiveObject<{ name: string }>
   pitches: LiveList<LiveObject<Pitch>>
   scopes: LiveList<LiveObject<Scope>>
   tasks: LiveList<LiveObject<Task>>

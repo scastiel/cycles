@@ -16,6 +16,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server'
 import { RoomInfo } from '@liveblocks/node'
 import { groupBy } from 'lodash'
 import { Ellipsis } from 'lucide-react'
+import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -251,6 +252,40 @@ async function createRoom(formData: FormData) {
         createdBy: userId,
       },
       defaultAccesses: ['room:write'],
+    })
+
+    const pitchId = nanoid()
+    const scopeId = nanoid()
+    await liveblocks.initializeStorageDocument(roomId, {
+      liveblocksType: 'LiveObject',
+      data: {
+        tasks: { liveblocksType: 'LiveList', data: [] },
+        scopes: {
+          liveblocksType: 'LiveList',
+          data: [
+            {
+              liveblocksType: 'LiveObject',
+              data: {
+                id: scopeId,
+                pitchId,
+                title: 'First scope',
+                color: 'color-2',
+                core: true,
+              },
+            },
+          ],
+        },
+        pitches: {
+          liveblocksType: 'LiveList',
+          data: [
+            {
+              liveblocksType: 'LiveObject',
+              data: { id: pitchId, title: 'First pitch' },
+            },
+          ],
+        },
+        info: { liveblocksType: 'LiveObject', data: { name: 'New board' } },
+      },
     })
   }
 

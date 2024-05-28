@@ -3,6 +3,7 @@ import { ClientSideSuspense } from '@liveblocks/react'
 import {
   Pitch,
   RoomProvider,
+  Scope,
   Storage,
   useMutation,
   useOthers,
@@ -71,7 +72,6 @@ export function Room({
       id={roomId}
       initialPresence={{}}
       initialStorage={{
-        info: new LiveObject({ name: 'New board' }),
         pitches: new LiveList(),
         scopes: new LiveList(),
         tasks: new LiveList(),
@@ -82,13 +82,19 @@ export function Room({
           <main className="mt-16 w-full max-w-screen-md mx-auto">Loading…</main>
         }
       >
-        {() => (
-          <SelectedPitchContextProvider>
-            <RoomContent boardTitle={boardTitle} />
-          </SelectedPitchContextProvider>
-        )}
+        {() => <SelectedPitchRoomContent boardTitle={boardTitle} />}
       </ClientSideSuspense>
     </RoomProvider>
+  )
+}
+
+function SelectedPitchRoomContent({ boardTitle }: { boardTitle: string }) {
+  const firstPitchId = useStorage((root) => root.pitches[0]?.id)
+
+  return (
+    <SelectedPitchContextProvider initialSelectedPitchId={firstPitchId}>
+      <RoomContent boardTitle={boardTitle} />
+    </SelectedPitchContextProvider>
   )
 }
 
@@ -137,7 +143,7 @@ function RoomContent({ boardTitle }: { boardTitle: string }) {
       <div className="fixed top-10 left-0 bottom-0 w-[300px] border-r">
         <SidePanel boardTitle={boardTitle} />
       </div>
-      <div className="ml-[300px]">
+      <div className="ml-[300px] min-h-[100dvh] flex flex-col">
         {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
       </div>
     </div>
