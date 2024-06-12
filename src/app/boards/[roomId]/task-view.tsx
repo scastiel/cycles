@@ -112,7 +112,11 @@ export function TaskView({ task }: { task: Task }) {
               onClick={edit}
               className="text-sm overflow-hidden hyphens-auto"
             >
-              {task.title}
+              {task.title || (
+                <em className="text-muted-foreground">
+                  Enter a task description
+                </em>
+              )}
             </div>
           </div>
         )}
@@ -168,6 +172,7 @@ function TaskTitleEditor({
         value={draftName}
         onChange={(event) => setDraftName(event.target.value)}
         autoFocus
+        placeholder="Enter a task description"
       />
       <div className="flex justify-center gap-1">
         <Button size="sm" type="submit">

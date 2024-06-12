@@ -426,7 +426,7 @@ function useCreateTaskMutation(scopeId: string) {
       storage.get('tasks').push(
         new LiveObject({
           id: nanoid(),
-          title: 'New task',
+          title: '',
           scopeId,
           status,
           type: 'task',
