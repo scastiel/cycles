@@ -1,7 +1,9 @@
 import {
   PitchSnapshot,
   Scope,
+  ScopeColor,
   TaskStatus,
+  scopeColors,
   useList,
   useMutation,
   useOthers,
@@ -52,6 +54,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
+import { countBy, uniq } from 'lodash'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
@@ -259,6 +262,21 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
 }
 
 export function useCreateScopeMutation(pitchId: string) {
+  const colorsWithUsage = useStorage((root) =>
+    countBy(
+      root.scopes
+        .filter((scope) => scope.pitchId === pitchId && !scope.archived)
+        .map((scope) => scope.color),
+      (a) => a
+    )
+  )
+  const colorsSortedByUsage = Object.entries(colorsWithUsage)
+    .sort(([color1, count1], [color2, count2]) => count1 - count2)
+    .map(([color]) => color)
+  const firstAvailableColor =
+    scopeColors.find((color) => !colorsSortedByUsage.includes(color)) ??
+    colorsSortedByUsage[0]
+
   return useMutation(
     ({ storage }) => {
       storage.get('scopes').push(
@@ -266,10 +284,11 @@ export function useCreateScopeMutation(pitchId: string) {
           id: nanoid(),
           pitchId,
           title: 'New scope',
+          color: firstAvailableColor as ScopeColor,
         })
       )
     },
-    [pitchId]
+    [pitchId, firstAvailableColor]
   )
 }
 
