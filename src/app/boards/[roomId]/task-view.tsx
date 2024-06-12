@@ -107,7 +107,11 @@ export function TaskView({ task }: { task: Task }) {
       <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
         {(edit) => (
           <div className="flex flex-col gap-1 hover:bg-muted hover:bg-opacity-5">
-            <div role="button" onClick={edit} className="text-sm">
+            <div
+              role="button"
+              onClick={edit}
+              className="text-sm overflow-hidden hyphens-auto"
+            >
               {task.title}
             </div>
           </div>
