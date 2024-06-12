@@ -89,7 +89,9 @@ export function Room({
 }
 
 function SelectedPitchRoomContent({ boardTitle }: { boardTitle: string }) {
-  const firstPitchId = useStorage((root) => root.pitches[0]?.id)
+  const firstPitchId = useStorage(
+    (root) => root.pitches.filter((pitch) => !pitch.archived)[0]?.id
+  )
 
   return (
     <SelectedPitchContextProvider initialSelectedPitchId={firstPitchId}>
