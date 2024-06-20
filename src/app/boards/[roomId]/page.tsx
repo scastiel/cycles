@@ -1,5 +1,6 @@
 import { Room } from '@/app/boards/[roomId]/room'
 import { liveblocks } from '@/lib/liveblocks'
+import { getOrganizationUsers } from '@/lib/users'
 import { auth } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 
@@ -23,5 +24,9 @@ export default async function RoomPage({
     notFound()
   }
 
-  return <Room roomId={roomId} boardTitle={boardTitle} />
+  const users = await getOrganizationUsers(orgId)
+
+  return (
+    <Room roomId={roomId} boardTitle={boardTitle} organizationUsers={users} />
+  )
 }

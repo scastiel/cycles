@@ -1,7 +1,7 @@
 import { Task, TaskType, useMutation } from '@/liveblocks.config'
 import { ReactNode, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { Ellipsis, Grip } from 'lucide-react'
+import { Cross, Ellipsis, Grip, X } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,13 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { match } from 'ts-pattern'
 import { cn } from '@/lib/utils'
+import { useOrganizationUsers } from '@/components/organization-users-context'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export function TaskView({ task }: { task: Task }) {
   const updateTaskTitle = useMutation(
@@ -24,24 +31,6 @@ export function TaskView({ task }: { task: Task }) {
         .get('tasks')
         .find((t) => t.get('id') === task.id)
         ?.set('title', title)
-    },
-    [task.id]
-  )
-  const archiveTask = useMutation(
-    ({ storage }) => {
-      storage
-        .get('tasks')
-        .find((t) => t.get('id') === task.id)
-        ?.set('archived', true)
-    },
-    [task.id]
-  )
-  const updateTaskType = useMutation(
-    ({ storage }, type: TaskType) => {
-      storage
-        .get('tasks')
-        .find((t) => t.get('id') === task.id)
-        ?.set('type', type)
     },
     [task.id]
   )
@@ -76,33 +65,8 @@ export function TaskView({ task }: { task: Task }) {
     >
       <div className="flex justify-between">
         <Grip className="cursor-move size-4" {...listeners} {...attributes} />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-auto w-auto p-1 -m-1"
-            >
-              <Ellipsis className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Type</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup
-              value={task.type}
-              onValueChange={(value) => updateTaskType(value as TaskType)}
-            >
-              <DropdownMenuRadioItem value="task">Normal</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="optional">
-                Optional
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="bug">Bug</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={archiveTask}>Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+        <TaskMenu task={task} />
       </div>
       <TaskTitleViewAndEditor value={task.title} updateValue={updateTaskTitle}>
         {(edit) => (
@@ -124,6 +88,159 @@ export function TaskView({ task }: { task: Task }) {
     </div>
   )
 }
+
+function TaskMenu({ task }: { task: Task }) {
+  const users = useOrganizationUsers()
+  const assignee = task.assignee
+    ? users.find((u) => u.userId === task.assignee)
+    : undefined
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-auto w-auto p-1 -m-1 flex flex-row gap-1"
+        >
+          {assignee && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar className="shadow size-5 -my-1">
+                  <AvatarImage
+                    src={assignee.hasImage ? assignee.imageUrl : undefined}
+                  />
+                  <AvatarFallback className="text-[10px]">
+                    {assignee.initials}
+                  </AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent>{assignee.name}</TooltipContent>
+            </Tooltip>
+          )}
+          <Ellipsis className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <TaskMenuContent task={task} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function TaskMenuContent({ task }: { task: Task }) {
+  const archiveTask = useMutation(
+    ({ storage }) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+        ?.set('archived', true)
+    },
+    [task.id]
+  )
+
+  const updateTaskType = useMutation(
+    ({ storage }, type: TaskType) => {
+      storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+        ?.set('type', type)
+    },
+    [task.id]
+  )
+
+  const updateTaskAssignee = useMutation(
+    ({ storage }, assignee: string | undefined) => {
+      const storageTask = storage
+        .get('tasks')
+        .find((t) => t.get('id') === task.id)
+      if (assignee) {
+        storageTask?.set('assignee', assignee)
+      } else {
+        storageTask?.delete('assignee')
+      }
+    },
+    [task.id]
+  )
+
+  const users = useOrganizationUsers()
+
+  return (
+    <>
+      <DropdownMenuLabel>Type</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuRadioGroup
+        value={task.type}
+        onValueChange={(value) => updateTaskType(value as TaskType)}
+      >
+        <DropdownMenuRadioItem value="task">Normal</DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="optional">Optional</DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="bug">Bug</DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup>
+      <DropdownMenuSeparator />
+      {users.length > 0 && (
+        <>
+          <DropdownMenuLabel>Assignee</DropdownMenuLabel>
+          <div className="grid grid-cols-6 gap-1 px-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-2 group"
+                  onClick={() => updateTaskAssignee(undefined)}
+                >
+                  <Avatar
+                    className={cn(
+                      'opacity-50 shadow w-8 h-8 border-2 border-transparent group-hover:opacity-100',
+                      !task.assignee && 'border-slate-400 opacity-100'
+                    )}
+                  >
+                    <AvatarFallback>
+                      <X className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Unassign</TooltipContent>
+            </Tooltip>
+            {users.map((user) => (
+              <Tooltip key={user.userId}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-2 group"
+                    onClick={() => updateTaskAssignee(user.userId)}
+                  >
+                    <Avatar
+                      className={cn(
+                        'opacity-50 shadow w-8 h-8 border-2 border-transparent group-hover:opacity-100',
+                        task.assignee === user.userId &&
+                          'border-slate-400 opacity-100'
+                      )}
+                    >
+                      <AvatarImage
+                        src={user.hasImage ? user.imageUrl : undefined}
+                      />
+                      <AvatarFallback>{user.initials}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{user.name}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          <DropdownMenuSeparator />
+        </>
+      )}
+      <DropdownMenuItem onClick={archiveTask} className="text-destructive">
+        Delete
+      </DropdownMenuItem>
+    </>
+  )
+}
+
 function TaskTitleViewAndEditor({
   value,
   updateValue,

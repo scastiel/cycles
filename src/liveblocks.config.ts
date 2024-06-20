@@ -101,6 +101,7 @@ export type Task = {
   archived?: boolean
   status: TaskStatus
   type?: TaskType
+  assignee?: string
 }
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
 export type TaskType = 'task' | 'optional' | 'bug'

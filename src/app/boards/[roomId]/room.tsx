@@ -3,13 +3,8 @@ import { ClientSideSuspense } from '@liveblocks/react'
 import {
   Pitch,
   RoomProvider,
-  Scope,
-  Storage,
   useMutation,
   useOthers,
-  useRoom,
-  useRoomInfo,
-  useSelf,
   useStorage,
   useUpdateMyPresence,
 } from '../../../liveblocks.config'
@@ -43,48 +38,52 @@ import assert from 'assert'
 import { PitchView } from '@/app/boards/[roomId]/pitch-view'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { Button } from '@/components/ui/button'
-import { Dot, Ellipsis, GripVertical, Menu, PlusIcon } from 'lucide-react'
+import { Ellipsis, GripVertical, PlusIcon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable'
 import { ArchiveCollapsible } from './archive-collapsible'
 import { cn } from '@/lib/utils'
+import { OrganizationUser } from '@/lib/users'
+import { OrganizationUsersProvider } from '@/components/organization-users-context'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export function Room({
   roomId,
   boardTitle,
+  organizationUsers,
 }: {
   roomId: string
   boardTitle: string
+  organizationUsers: OrganizationUser[]
 }) {
   return (
-    <RoomProvider
-      id={roomId}
-      initialPresence={{}}
-      initialStorage={{
-        pitches: new LiveList(),
-        scopes: new LiveList(),
-        tasks: new LiveList(),
-      }}
-    >
-      <ClientSideSuspense
-        fallback={
-          <main className="mt-16 w-full max-w-screen-md mx-auto">Loading…</main>
-        }
-      >
-        {() => <SelectedPitchRoomContent boardTitle={boardTitle} />}
-      </ClientSideSuspense>
-    </RoomProvider>
+    <TooltipProvider>
+      <OrganizationUsersProvider organizationUsers={organizationUsers}>
+        <RoomProvider
+          id={roomId}
+          initialPresence={{}}
+          initialStorage={{
+            pitches: new LiveList(),
+            scopes: new LiveList(),
+            tasks: new LiveList(),
+          }}
+        >
+          <ClientSideSuspense
+            fallback={
+              <main className="mt-16 w-full max-w-screen-md mx-auto">
+                Loading…
+              </main>
+            }
+          >
+            {() => <SelectedPitchRoomContent boardTitle={boardTitle} />}
+          </ClientSideSuspense>
+        </RoomProvider>
+      </OrganizationUsersProvider>
+    </TooltipProvider>
   )
 }
 
