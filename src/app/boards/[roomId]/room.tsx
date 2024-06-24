@@ -3,6 +3,7 @@ import { ClientSideSuspense } from '@liveblocks/react'
 import {
   Pitch,
   RoomProvider,
+  useLostConnectionListener,
   useMutation,
   useOthers,
   useStorage,
@@ -38,7 +39,7 @@ import assert from 'assert'
 import { PitchView } from '@/app/boards/[roomId]/pitch-view'
 import { StringViewAndEditor } from './string-view-and-editor'
 import { Button } from '@/components/ui/button'
-import { Ellipsis, GripVertical, PlusIcon } from 'lucide-react'
+import { CircleAlert, Ellipsis, GripVertical, PlusIcon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,8 @@ import { cn } from '@/lib/utils'
 import { OrganizationUser } from '@/lib/users'
 import { OrganizationUsersProvider } from '@/components/organization-users-context'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useToast } from '@/components/ui/use-toast'
+import { match } from 'ts-pattern'
 
 export function Room({
   roomId,
@@ -79,11 +82,68 @@ export function Room({
               </main>
             }
           >
-            {() => <SelectedPitchRoomContent boardTitle={boardTitle} />}
+            {() => (
+              <>
+                <ConnectionState />
+                <SelectedPitchRoomContent boardTitle={boardTitle} />
+              </>
+            )}
           </ClientSideSuspense>
         </RoomProvider>
       </OrganizationUsersProvider>
     </TooltipProvider>
+  )
+}
+
+function ConnectionState() {
+  const { toast } = useToast()
+  const [status, setStatus] = useState<'online' | 'reconnecting' | 'offline'>(
+    'online'
+  )
+
+  useLostConnectionListener((event) => {
+    match(event)
+      .with('lost', () => {
+        setStatus('reconnecting')
+        toast({
+          title: 'Warning: Connection lost',
+          description: <>We are still trying to reconnect…</>,
+        })
+      })
+      .with('restored', () => {
+        setStatus('online')
+        toast({ title: 'Successfully reconnected again!' })
+      })
+      .with('failed', () => {
+        setStatus('offline')
+        toast({
+          title: 'Warning: Connection lost',
+          description: <>Your changes might not be saved.</>,
+          variant: 'destructive',
+        })
+      })
+  })
+
+  if (status === 'online') return null
+
+  return (
+    <div
+      className={cn(
+        // status === 'online' && 'bg-green-600',
+        status === 'reconnecting' && 'bg-orange-600',
+        status === 'offline' && 'bg-red-600',
+        'absolute top-0 left-1/2 -translate-x-1/2 z-20 text-white text-xs px-3 py-1 rounded-b-lg flex flex-row gap-2 items-center'
+      )}
+    >
+      <CircleAlert className="size-4" />
+      <div>
+        {match(status)
+          .with('reconnecting', () => <>Connection lost. Reconnecting…</>)
+          .with('offline', () => <>Connection lost</>)
+          // .with('online', () => <>Online</>)
+          .exhaustive()}
+      </div>
+    </div>
   )
 }
 

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeSelector } from '@/components/theme-selector'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'Cycles',
@@ -67,6 +68,8 @@ export default function RootLayout({
             </header>
 
             {children}
+
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
