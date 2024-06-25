@@ -1,16 +1,14 @@
 import {
-  PitchSnapshot,
   Scope,
   ScopeColor,
   TaskStatus,
   scopeColors,
-  useList,
   useMutation,
   useOthers,
   useStorage,
   useUpdateMyPresence,
 } from '@/liveblocks.config'
-import { LiveList, LiveObject } from '@liveblocks/client'
+import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
 import { nanoid } from 'nanoid'
 import {
@@ -30,44 +28,26 @@ import {
   forwardRef,
   useRef,
 } from 'react'
-import { StringViewAndEditor } from './string-view-and-editor'
 import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Ellipsis, Plus } from 'lucide-react'
+import { Ellipsis, ExternalLink, Plus } from 'lucide-react'
 import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon } from './scope-icon'
 import Cursor from '@/app/boards/[roomId]/cursor'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
 import { countBy, uniq } from 'lodash'
+import { ScopeDropdownMenu } from '@/app/boards/[roomId]/scope-dropdown-menu'
+import { PitchDropdownMenu } from './pitch-dropdown-menu'
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
     root.pitches.find((pitch) => pitch.id === pitchId)
   )
   assert(pitch, 'Pitch does not exist')
-
-  const updateTitle = useMutation(({ storage }, title: string) => {
-    storage
-      .get('pitches')
-      .find((pitch) => pitch.get('id') === pitchId)
-      ?.set('title', title)
-  }, [])
 
   const divRef = useRef<HTMLDivElement | null>(null)
   const updateCursorProps = useUpdateMyCursor(divRef)
@@ -86,36 +66,42 @@ export function PitchView({ pitchId }: { pitchId: string }) {
       {...updateCursorProps}
     >
       <OthersCursors pitchId={pitchId} />
-      <div className="sticky left-0 flex items-baseline gap-2">
-        <StringViewAndEditor value={pitch.title} updateValue={updateTitle}>
-          {(edit) => (
-            <div className="flex items-center gap-4">
-              <h2 className="font-bold text-lg">{pitch.title}</h2>
-              <div>
-                <Dialog>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="icon" variant="ghost">
-                        <Ellipsis className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={edit}>
-                        Rename pitch
-                      </DropdownMenuItem>
-                      <DialogTrigger asChild>
-                        <DropdownMenuItem>Snapshots…</DropdownMenuItem>
-                      </DialogTrigger>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <DialogContent className="w-[1266px] max-w-[calc(100vw-4rem)]">
-                    <SnapshotsDialogContent pitchId={pitch.id} />
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </div>
+      <div className="sticky left-0 flex flex-col gap-1 my-2 group">
+        <div className="flex items-center gap-4">
+          <h2 className="font-bold text-lg">{pitch.title}</h2>
+          <Dialog>
+            <PitchDropdownMenu pitch={pitch}>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-6 opacity-10 group-hover:opacity-100"
+              >
+                <Ellipsis className="size-4" />
+              </Button>
+            </PitchDropdownMenu>
+            <DialogContent className="w-[1266px] max-w-[calc(100vw-4rem)]">
+              <SnapshotsDialogContent pitchId={pitch.id} />
+            </DialogContent>
+          </Dialog>
+          {pitch.link && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-xs"
+              asChild
+            >
+              <a href={pitch.link} target="_blank">
+                <ExternalLink className="size-3 mr-2" />
+                Pitch
+              </a>
+            </Button>
           )}
-        </StringViewAndEditor>
+        </div>
+        {pitch.description && (
+          <p className="text-sm text-muted-foreground max-w-screen-sm">
+            {pitch.description}
+          </p>
+        )}
       </div>
 
       <PitchDashboard pitchId={pitch.id} />
@@ -320,9 +306,30 @@ const ScopeView = forwardRef<
       style={style}
       ref={forwardedRef}
     >
-      <div className="sticky w-fit left-0 flex items-center gap-2">
-        <ScopeIcon scope={scope} />
-        <span className="text-sm font-semibold">{scope.title}</span>
+      <div className="sticky w-fit left-0 group">
+        <div className="flex gap-2">
+          <div className="mt-1">
+            <ScopeIcon scope={scope} />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{scope.title}</span>
+              <ScopeDropdownMenu scope={scope}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 opacity-10 group-hover:opacity-100"
+                >
+                  <Ellipsis className="size-4" />
+                </Button>
+              </ScopeDropdownMenu>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {scope.description ||
+                'If we only ship this scope, the user will be able to…'}
+            </p>
+          </div>
+        </div>
       </div>
       <div>
         <ScopeTasksList scopeId={scope.id} />

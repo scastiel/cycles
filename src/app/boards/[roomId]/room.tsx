@@ -37,15 +37,8 @@ import {
 } from '@dnd-kit/sortable'
 import assert from 'assert'
 import { PitchView } from '@/app/boards/[roomId]/pitch-view'
-import { StringViewAndEditor } from './string-view-and-editor'
 import { Button } from '@/components/ui/button'
-import { CircleAlert, Ellipsis, GripVertical, PlusIcon } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { CircleAlert, GripVertical, PlusIcon } from 'lucide-react'
 import { ArchiveCollapsible } from './archive-collapsible'
 import { cn } from '@/lib/utils'
 import { OrganizationUser } from '@/lib/users'
@@ -352,15 +345,7 @@ const PitchListItem = forwardRef<
   HTMLLIElement,
   { pitch: Pitch; grip?: ReactNode; style?: CSSProperties }
 >(({ pitch, grip, style }, forwardedRef) => {
-  const updatePitchTitle = useMutation(({ storage }, title: string) => {
-    storage
-      .get('pitches')
-      .find((p) => p.get('id') === pitch.id)
-      ?.set('title', title)
-  }, [])
-
   const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
-  const archivePitch = useArchivePitchMutation(pitch)
 
   return (
     <li
@@ -369,53 +354,22 @@ const PitchListItem = forwardRef<
       style={style}
     >
       {grip}
-      <StringViewAndEditor value={pitch.title} updateValue={updatePitchTitle}>
-        {(edit) => (
-          <div className="flex-1 flex gap-1 items-center overflow-hidden">
-            <Button
-              variant="link"
-              onClick={() => setSelectedPitchId(pitch.id)}
-              className={cn(
-                selectedPitchId === pitch.id && 'font-bold',
-                'flex-1 text-left justify-start overflow-hidden pr-0'
-              )}
-            >
-              <span className="overflow-hidden text-ellipsis">
-                {pitch.title}
-              </span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Ellipsis className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={edit}>Rename</DropdownMenuItem>
-                <DropdownMenuItem onClick={archivePitch}>
-                  {pitch.archived ? 'Restore' : 'Archive'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-      </StringViewAndEditor>
+      <div className="flex-1 flex gap-1 items-center overflow-hidden">
+        <Button
+          variant="link"
+          onClick={() => setSelectedPitchId(pitch.id)}
+          className={cn(
+            selectedPitchId === pitch.id && 'font-bold',
+            'flex-1 text-left justify-start overflow-hidden pr-0'
+          )}
+        >
+          <span className="overflow-hidden text-ellipsis">{pitch.title}</span>
+        </Button>
+      </div>
     </li>
   )
 })
 PitchListItem.displayName = 'PitchListItem'
-
-function useArchivePitchMutation(pitch: Pitch) {
-  return useMutation(
-    ({ storage }) => {
-      storage
-        .get('pitches')
-        .find((p) => p.get('id') === pitch.id)
-        ?.set('archived', !pitch.archived)
-    },
-    [pitch]
-  )
-}
 
 function useCreatePitch() {
   return useMutation(({ storage }) => {

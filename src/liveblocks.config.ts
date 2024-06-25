@@ -64,6 +64,8 @@ export type Pitch = {
   id: string
   title: string
   archived?: boolean
+  description?: string
+  link?: string
 }
 export type PitchSnapshot = {
   id: string
@@ -82,6 +84,7 @@ export type Scope = {
   progress?: number
   effort?: number
   impact?: number
+  description?: string
 }
 export const scopeColors = [
   'color-1',

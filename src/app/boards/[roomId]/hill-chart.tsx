@@ -1,14 +1,5 @@
-import {
-  ScopeIcon,
-  getScopeColorClasses,
-} from '@/app/boards/[roomId]/scope-icon'
-import {
-  Scope,
-  ScopeColor,
-  scopeColors,
-  useMutation,
-  useStorage,
-} from '@/liveblocks.config'
+import { ScopeIcon } from '@/app/boards/[roomId]/scope-icon'
+import { Scope, useMutation, useStorage } from '@/liveblocks.config'
 import { match } from 'ts-pattern'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -31,23 +22,14 @@ import {
 import { cn } from '@/lib/utils'
 import assert from 'assert'
 import { SortableContext, useSortable } from '@dnd-kit/sortable'
-import { Circle, Ellipsis, GripVertical, Plus, Star } from 'lucide-react'
+import { Ellipsis, GripVertical, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
   DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  useArchiveScopeMutation,
-  useCreateScopeMutation,
-  useRestoreScopeMutation,
-} from '@/app/boards/[roomId]/pitch-view'
-import { Input } from '@/components/ui/input'
+import { useCreateScopeMutation } from '@/app/boards/[roomId]/pitch-view'
+import { ScopeDropdownMenu } from './scope-dropdown-menu'
 
 const HoveredScopeContext = createContext<{
   hoveredScopeId: string | null
@@ -194,97 +176,6 @@ function SortableScopeItem({
         </ScopeDropdownMenu>
       )}
     </div>
-  )
-}
-
-function ScopeDropdownMenu({
-  scope,
-  children,
-}: PropsWithChildren<{ scope: Scope }>) {
-  const updateTitle = useMutation(({ storage }, title: string) => {
-    storage
-      .get('scopes')
-      .find((s) => s.get('id') === scope.id)
-      ?.set('title', title)
-  }, [])
-  const updateColorCore = useMutation(
-    ({ storage }, color: ScopeColor, core: boolean) => {
-      storage
-        .get('scopes')
-        .find((s) => s.get('id') === scope.id)
-        ?.update({ color, core })
-    },
-    []
-  )
-
-  const archiveScope = useArchiveScopeMutation(scope.id)
-  const restoreScope = useRestoreScopeMutation(scope.id)
-
-  const [draftTitle, setDraftTitle] = useState(scope.title)
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <div className="p-2 flex flex-col gap-1">
-          <h4 className="text-sm font-semibold">Scope title</h4>
-          <form
-            className="flex gap-1"
-            onSubmit={(event) => {
-              event.preventDefault()
-              updateTitle(draftTitle)
-            }}
-          >
-            <Input
-              className="flex-1"
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.target.value)}
-            />
-            <Button type="submit">Save</Button>
-          </form>
-        </div>
-        <DropdownMenuSeparator />
-        <div>
-          <h4 className="text-sm font-semibold px-2 pt-2">Scope icon</h4>
-          {[true, false].map((core) => (
-            <div key={String(core)} className="grid grid-cols-8">
-              {scopeColors.map((color) => {
-                const Icon = core ? Star : Circle
-                return (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    key={color}
-                    onClick={() => updateColorCore(color, core)}
-                    className="group"
-                  >
-                    <Icon
-                      className={cn(
-                        'size-4 group-hover:opacity-100',
-                        (scope.color !== color ||
-                          Boolean(scope.core) !== core) &&
-                          'opacity-20',
-                        getScopeColorClasses(color)
-                      )}
-                    />
-                  </Button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-        <DropdownMenuSeparator />
-        {scope.archived ? (
-          <DropdownMenuItem onClick={restoreScope}>
-            Restore scope
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem onClick={archiveScope} className="text-red-600">
-            Archive scope
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 
