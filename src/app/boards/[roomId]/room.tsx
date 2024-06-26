@@ -17,6 +17,7 @@ import {
   createContext,
   forwardRef,
   useContext,
+  useEffect,
   useState,
 } from 'react'
 import { nanoid } from 'nanoid'
@@ -142,11 +143,28 @@ function ConnectionState() {
 
 function SelectedPitchRoomContent({ boardTitle }: { boardTitle: string }) {
   const firstPitchId = useStorage(
-    (root) => root.pitches.filter((pitch) => !pitch.archived)[0]?.id
+    (root) => root.pitches.filter((pitch) => !pitch.archived).at(0)?.id ?? ''
   )
+  const [selectedPitchId, setSelectedPitchId] = useState<
+    string | undefined | null
+  >(null)
+
+  useEffect(() => {
+    const hash = document.location.hash
+    if (hash) {
+      setSelectedPitchId(hash.replace(/^#/, ''))
+    } else {
+      if (firstPitchId) {
+        history.replaceState(undefined, '', `#${firstPitchId}`)
+      }
+      setSelectedPitchId(firstPitchId)
+    }
+  }, [firstPitchId])
+
+  if (selectedPitchId === null) return null
 
   return (
-    <SelectedPitchContextProvider initialSelectedPitchId={firstPitchId}>
+    <SelectedPitchContextProvider initialSelectedPitchId={selectedPitchId}>
       <RoomContent boardTitle={boardTitle} />
     </SelectedPitchContextProvider>
   )
@@ -178,6 +196,7 @@ function SelectedPitchContextProvider({
   const setSelectedPitchId = (id: string | undefined) => {
     updateMyPresence({ activePitchId: id ?? null })
     _setSelectedPitchId(id)
+    history.pushState(undefined, '', `#${id}`)
   }
 
   return (
