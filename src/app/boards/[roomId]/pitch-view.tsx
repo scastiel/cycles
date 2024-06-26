@@ -30,14 +30,14 @@ import {
 } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
-import { Ellipsis, ExternalLink, Plus } from 'lucide-react'
+import { Calendar, Ellipsis, ExternalLink, Plus } from 'lucide-react'
 import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
 import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon } from './scope-icon'
 import Cursor from '@/app/boards/[roomId]/cursor'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
 import { countBy, uniq } from 'lodash'
 import { ScopeDropdownMenu } from '@/app/boards/[roomId]/scope-dropdown-menu'
@@ -69,33 +69,45 @@ export function PitchView({ pitchId }: { pitchId: string }) {
       <div className="sticky left-0 flex flex-col gap-1 my-2 group">
         <div className="flex items-center gap-4">
           <h2 className="font-bold text-lg">{pitch.title}</h2>
-          <Dialog>
-            <PitchDropdownMenu pitch={pitch}>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-6 opacity-10 group-hover:opacity-100"
-              >
-                <Ellipsis className="size-4" />
-              </Button>
-            </PitchDropdownMenu>
-            <DialogContent className="w-[1266px] max-w-[calc(100vw-4rem)]">
-              <SnapshotsDialogContent pitchId={pitch.id} />
-            </DialogContent>
-          </Dialog>
-          {pitch.link && (
+          <PitchDropdownMenu pitch={pitch}>
             <Button
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-xs"
-              asChild
+              size="icon"
+              variant="ghost"
+              className="size-6 opacity-10 group-hover:opacity-100"
             >
-              <a href={pitch.link} target="_blank">
-                <ExternalLink className="size-3 mr-2" />
-                Pitch
-              </a>
+              <Ellipsis className="size-4" />
             </Button>
-          )}
+          </PitchDropdownMenu>
+          <div className="flex gap-2 items-center">
+            {pitch.link && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                asChild
+              >
+                <a href={pitch.link} target="_blank">
+                  <ExternalLink className="size-3 mr-2" />
+                  Pitch
+                </a>
+              </Button>
+            )}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                >
+                  <Calendar className="size-3 mr-2" />
+                  Snapshots
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[1266px] max-w-[calc(100vw-4rem)]">
+                <SnapshotsDialogContent pitchId={pitch.id} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         {pitch.description && (
           <p className="text-sm text-muted-foreground max-w-screen-sm">

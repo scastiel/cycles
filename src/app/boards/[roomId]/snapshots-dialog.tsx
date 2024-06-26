@@ -69,6 +69,11 @@ export function SnapshotsDialogContent({ pitchId }: { pitchId: string }) {
       </DialogHeader>
       <div className="-mx-6 overflow-y-auto max-h-[calc(100dvh-10rem)]">
         <div className="flex flex-col gap-4 w-fit">
+          {snapshots.length === 0 && (
+            <div className="p-6 w-full text-sm text-muted-foreground">
+              No snapshot yet.
+            </div>
+          )}
           {snapshots.map((snapshot) => (
             <div key={snapshot.id} className="flex flex-col gap-4">
               <div className="border-t border-b sticky top-0 bg-muted z-10 px-6 py-1">

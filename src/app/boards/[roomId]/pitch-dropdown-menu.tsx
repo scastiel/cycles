@@ -99,10 +99,6 @@ function PitchDropdownMenuContent({
         </Button>
       </form>
       <DropdownMenuSeparator />
-      <DialogTrigger asChild>
-        <DropdownMenuItem>Snapshots…</DropdownMenuItem>
-      </DialogTrigger>
-      <DropdownMenuSeparator />
       <DropdownMenuItem
         onClick={archivePitch}
         className={cn(pitch.archived || 'text-destructive')}
