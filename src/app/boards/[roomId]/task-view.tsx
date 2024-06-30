@@ -23,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { UserAvatar } from '@/app/boards/[roomId]/user-avatar'
 
 export function TaskView({ task }: { task: Task }) {
   const updateTaskTitle = useMutation(
@@ -103,21 +104,7 @@ function TaskMenu({ task }: { task: Task }) {
           size="icon"
           className="h-auto w-auto p-1 -m-1 flex flex-row gap-1"
         >
-          {assignee && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Avatar className="shadow size-5 -my-1">
-                  <AvatarImage
-                    src={assignee.hasImage ? assignee.imageUrl : undefined}
-                  />
-                  <AvatarFallback className="text-[10px]">
-                    {assignee.initials}
-                  </AvatarFallback>
-                </Avatar>
-              </TooltipTrigger>
-              <TooltipContent>{assignee.name}</TooltipContent>
-            </Tooltip>
-          )}
+          {assignee && <UserAvatar user={assignee} />}
           <Ellipsis className="size-4" />
         </Button>
       </DropdownMenuTrigger>

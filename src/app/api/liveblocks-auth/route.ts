@@ -13,8 +13,14 @@ export async function POST(request: Request) {
   // Start an auth session inside your endpoint
   const session = liveblocks.prepareSession(userId, {
     userInfo: {
-      fullName: user?.fullName,
+      name: user?.fullName ?? undefined,
       username: user?.username,
+      hasImage: user?.hasImage,
+      imageUrl: user?.imageUrl,
+      initials: [user?.firstName, user?.lastName]
+        .filter(Boolean)
+        .join('')
+        .toUpperCase(),
     },
   })
 

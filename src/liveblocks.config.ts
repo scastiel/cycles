@@ -124,8 +124,11 @@ export type Storage = {
 type UserMeta = {
   id: string
   info: {
-    fullName: string
+    name: string
     username: string
+    imageUrl: string
+    hasImage: boolean
+    initials: string
   }
 }
 

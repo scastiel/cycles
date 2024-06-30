@@ -47,6 +47,7 @@ import { OrganizationUsersProvider } from '@/components/organization-users-conte
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { match } from 'ts-pattern'
+import { UserAvatar } from '@/app/boards/[roomId]/user-avatar'
 
 export function Room({
   roomId,
@@ -224,7 +225,6 @@ function RoomContent({ boardTitle }: { boardTitle: string }) {
 }
 
 function SidePanel({ boardTitle }: { boardTitle: string }) {
-  const others = useOthers()
   const createPitch = useCreatePitch()
   const archivePitchesCount = useStorage(
     (root) => root.pitches.filter((p) => p.archived).length
@@ -251,9 +251,22 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
         )}
       </div>
       <div className="p-2">
-        <p className="text-center text-xs text-muted-foreground">
-          {others.length} other user(s) online.
-        </p>
+        <OnlineUsers />
+      </div>
+    </div>
+  )
+}
+
+function OnlineUsers() {
+  const others = useOthers()
+
+  return (
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div>{others.length} other user(s) online.</div>
+      <div className="flex gap-1">
+        {others.map((user) => (
+          <UserAvatar key={user.connectionId} user={user.info} />
+        ))}
       </div>
     </div>
   )

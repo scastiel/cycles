@@ -161,7 +161,7 @@ function OthersCursors({ pitchId }: { pitchId: string }) {
         ({
           connectionId,
           presence: { cursor, activePitchId },
-          info: { fullName, username },
+          info: { name, username },
         }) => {
           if (!cursor) return null
           if (activePitchId !== pitchId) return
@@ -171,7 +171,7 @@ function OthersCursors({ pitchId }: { pitchId: string }) {
               key={connectionId}
               x={cursor.x}
               y={cursor.y}
-              name={fullName ?? username}
+              name={name ?? username}
             />
           )
         }
