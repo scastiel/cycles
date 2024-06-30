@@ -48,6 +48,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import { match } from 'ts-pattern'
 import { UserAvatar } from '@/app/boards/[roomId]/user-avatar'
+import { uniqBy } from 'lodash'
 
 export function Room({
   roomId,
@@ -259,12 +260,13 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
 
 function OnlineUsers() {
   const others = useOthers()
+  const users = uniqBy(others, (other) => other.id)
 
   return (
     <div className="flex items-center justify-between text-xs text-muted-foreground">
-      <div>{others.length} other user(s) online.</div>
+      <div>{users.length} other user(s) online.</div>
       <div className="flex gap-1">
-        {others.map((user) => (
+        {users.map((user) => (
           <UserAvatar key={user.connectionId} user={user.info} />
         ))}
       </div>
