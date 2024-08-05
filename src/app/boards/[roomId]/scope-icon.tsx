@@ -1,14 +1,28 @@
 import { Scope, ScopeColor } from '@/liveblocks.config'
-import { Circle, Star } from 'lucide-react'
+import { Circle, CircleDashed, CircleSlash2, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { match } from 'ts-pattern'
 
-export function ScopeIcon({ scope }: { scope: Scope }) {
-  const Icon = scope.core ? Star : Circle
+export function ScopeIcon({
+  scope,
+  className,
+}: {
+  scope: Pick<Scope, 'core' | 'optional' | 'out' | 'color'>
+  className?: string
+}) {
+  const Icon = scope.core
+    ? Star
+    : scope.optional
+    ? CircleDashed
+    : scope.out
+    ? CircleSlash2
+    : Circle
   return (
     <Icon
       className={cn(
+        className,
         'size-4 [&_polygon]:scale-[130%] [&_polygon]:-translate-x-[4px] [&_polygon]:-translate-y-[4px] [&_circle]:stroke-white [&_circle]:stroke-2 [&_polygon]:stroke-white [&_polygon]:stroke-2',
+        scope.out && '[&_path]:stroke-white [&_path]:stroke-[4]',
         getScopeColorClasses(scope.color)
       )}
     />

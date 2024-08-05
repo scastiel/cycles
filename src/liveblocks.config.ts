@@ -80,6 +80,8 @@ export type Scope = {
   title: string
   archived?: boolean
   core?: boolean
+  optional?: boolean
+  out?: boolean
   color?: ScopeColor
   progress?: number
   effort?: number

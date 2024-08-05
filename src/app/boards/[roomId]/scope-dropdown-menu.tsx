@@ -1,4 +1,7 @@
-import { getScopeColorClasses } from '@/app/boards/[roomId]/scope-icon'
+import {
+  ScopeIcon,
+  getScopeColorClasses,
+} from '@/app/boards/[roomId]/scope-icon'
 import {
   Scope,
   ScopeColor,
@@ -7,7 +10,13 @@ import {
 } from '@/liveblocks.config'
 import { PropsWithChildren, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Circle, Star } from 'lucide-react'
+import {
+  Circle,
+  CircleDashed,
+  CircleOff,
+  CircleSlash2,
+  Star,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -39,7 +48,10 @@ export function ScopeDropdownMenu({
   )
 }
 
-type ScopeDraft = Pick<Scope, 'title' | 'description' | 'core' | 'color'>
+type ScopeDraft = Pick<
+  Scope,
+  'title' | 'description' | 'core' | 'optional' | 'out' | 'color'
+>
 
 function ScopeDropdownMenuContent({
   scope,
@@ -59,7 +71,7 @@ function ScopeDropdownMenuContent({
   const restoreScope = useRestoreScopeMutation(scope.id)
 
   const [draft, setDraft] = useState<ScopeDraft>(
-    pick(scope, ['title', 'description', 'core', 'color'])
+    pick(scope, ['title', 'description', 'core', 'optional', 'out', 'color'])
   )
 
   return (
@@ -89,34 +101,56 @@ function ScopeDropdownMenuContent({
             setDraft({ ...draft, description: event.target.value })
           }
         />
-        <div className="flex flex-col gap-0">
-          {[true, false].map((core) => (
-            <div key={String(core)} className="grid grid-cols-8">
-              {scopeColors.map((color) => {
-                const Icon = core ? Star : Circle
-                return (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    key={color}
-                    onClick={() => setDraft({ ...draft, core, color })}
-                    className="group"
-                  >
-                    <Icon
-                      className={cn(
-                        'size-4 group-hover:opacity-100',
-                        (draft.color !== color ||
-                          Boolean(draft.core) !== core) &&
-                          'opacity-20',
-                        getScopeColorClasses(color)
-                      )}
-                    />
-                  </Button>
-                )
-              })}
-            </div>
-          ))}
+        <div className="grid grid-cols-8">
+          {[
+            [true, false, false],
+            [false, false, false],
+            [false, true, false],
+            [false, false, true],
+          ].flatMap(([core, optional, out]) =>
+            scopeColors.map((color) => {
+              const Icon = core
+                ? Star
+                : optional
+                ? CircleDashed
+                : out
+                ? CircleOff
+                : Circle
+              return (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  key={[core, optional, out, color].join('-')}
+                  onClick={() =>
+                    setDraft({ ...draft, core, optional, out, color })
+                  }
+                  className="group"
+                  title={
+                    core
+                      ? 'Core'
+                      : optional
+                      ? 'Optional'
+                      : out
+                      ? 'Out of scope'
+                      : 'Normal'
+                  }
+                >
+                  <ScopeIcon
+                    scope={{ core, optional, out, color }}
+                    className={cn(
+                      'group-hover:opacity-100',
+                      (draft.color !== color ||
+                        Boolean(draft.core) !== core ||
+                        Boolean(draft.optional) !== optional ||
+                        Boolean(draft.out) !== out) &&
+                        'opacity-20'
+                    )}
+                  />
+                </Button>
+              )
+            })
+          )}
         </div>
         <Button type="submit" className="self-center">
           Save
