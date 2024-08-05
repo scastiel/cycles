@@ -67,7 +67,7 @@ export default function RootLayout({
                 <ThemeSelector />
                 <Button variant="ghost" size="icon" className="-ml-2" asChild>
                   <a href="https://github.com/scastiel/cycles" target="_blank">
-                    <MarkGithubIcon className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <MarkGithubIcon className="size-4" />
                   </a>
                 </Button>
               </div>
