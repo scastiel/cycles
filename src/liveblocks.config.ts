@@ -107,7 +107,7 @@ export type Task = {
   assignee?: string
 }
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
-export type TaskType = 'task' | 'optional' | 'bug'
+export type TaskType = 'task' | 'optional' | 'bug' | 'question'
 
 export type Storage = {
   // author: LiveObject<{ firstName: string, lastName: string }>,

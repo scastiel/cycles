@@ -1,7 +1,7 @@
 import { Task, TaskType, useMutation } from '@/liveblocks.config'
 import { ReactNode, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { Cross, Ellipsis, Grip, X } from 'lucide-react'
+import { Circle, Cross, Ellipsis, Grip, X } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { match } from 'ts-pattern'
+import { P, match } from 'ts-pattern'
 import { cn } from '@/lib/utils'
 import { useOrganizationUsers } from '@/components/organization-users-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -24,6 +24,18 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { UserAvatar } from '@/app/boards/[roomId]/user-avatar'
+
+const getBgColorForTaskType = (taskType: TaskType | undefined) =>
+  match(taskType)
+    .with(
+      'task',
+      undefined,
+      () => 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50'
+    )
+    .with('optional', () => 'bg-blue-50 dark:bg-blue-900 dark:bg-opacity-50')
+    .with('bug', () => 'bg-red-50 dark:bg-red-900 dark:bg-opacity-50')
+    .with('question', () => 'bg-gray-100 dark:bg-gray-700 dark:bg-opacity-50')
+    .exhaustive()
 
 export function TaskView({ task }: { task: Task }) {
   const updateTaskTitle = useMutation(
@@ -49,17 +61,11 @@ export function TaskView({ task }: { task: Task }) {
       }
     : undefined
 
-  const bgColor = match(task.type)
-    .with('task', () => 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50')
-    .with('optional', () => 'bg-blue-50 dark:bg-blue-900 dark:bg-opacity-50')
-    .with('bug', () => 'bg-red-50 dark:bg-red-900 dark:bg-opacity-50')
-    .otherwise(() => 'bg-white')
-
   return (
     <div
       className={cn(
         'border rounded p-2 text-sm bg-white flex flex-col gap-2',
-        bgColor
+        getBgColorForTaskType(task.type)
       )}
       ref={setNodeRef}
       style={style}
@@ -155,15 +161,28 @@ function TaskMenuContent({ task }: { task: Task }) {
   return (
     <>
       <DropdownMenuLabel>Type</DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuRadioGroup
-        value={task.type}
-        onValueChange={(value) => updateTaskType(value as TaskType)}
-      >
-        <DropdownMenuRadioItem value="task">Normal</DropdownMenuRadioItem>
-        <DropdownMenuRadioItem value="optional">Optional</DropdownMenuRadioItem>
-        <DropdownMenuRadioItem value="bug">Bug</DropdownMenuRadioItem>
-      </DropdownMenuRadioGroup>
+      <div className="grid grid-cols-6 px-2">
+        {(['task', 'optional', 'bug', 'question'] as TaskType[]).map(
+          (taskType) => (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              key={taskType}
+              onClick={() => updateTaskType(taskType)}
+              className="group"
+            >
+              <div
+                className={cn(
+                  'size-4 border rounded group-hover:opacity-100',
+                  task.type === taskType && 'border-muted-foreground',
+                  getBgColorForTaskType(taskType)
+                )}
+              />
+            </Button>
+          )
+        )}
+      </div>
       <DropdownMenuSeparator />
       {users.length > 0 && (
         <>
