@@ -236,7 +236,9 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
       <div className="flex-1 p-2 flex flex-col gap-2">
         <div className="flex gap-2 items-baseline">
           <div className="w-full flex items-center">
-            <h2 className="flex-1 font-bold text-lg">{boardTitle}</h2>
+            <h2 className="flex-1 font-bold text-lg whitespace-nowrap text-ellipsis overflow-hidden">
+              {boardTitle}
+            </h2>
             <Button size="icon" variant="ghost" onClick={createPitch}>
               <PlusIcon className="size-4" />
             </Button>
