@@ -144,7 +144,7 @@ function ScopeDropdownMenuContent({
                         Boolean(draft.core) !== core ||
                         Boolean(draft.optional) !== optional ||
                         Boolean(draft.out) !== out) &&
-                        'opacity-20'
+                        'opacity-40'
                     )}
                   />
                 </Button>
