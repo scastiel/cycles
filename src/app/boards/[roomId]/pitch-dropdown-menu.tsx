@@ -23,7 +23,10 @@ export function PitchDropdownMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent
+        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDownCapture={(e) => e.stopPropagation()}
+      >
         <PitchDropdownMenuContent pitch={pitch} close={() => setOpen(false)} />
       </DropdownMenuContent>
     </DropdownMenu>

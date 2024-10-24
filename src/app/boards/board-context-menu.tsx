@@ -32,7 +32,10 @@ export function BoardContextMenu({
             <Ellipsis className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent
+          onKeyDown={(e) => e.stopPropagation()}
+          onKeyDownCapture={(e) => e.stopPropagation()}
+        >
           <DialogTrigger asChild>
             <DropdownMenuItem>Board settings…</DropdownMenuItem>
           </DialogTrigger>
