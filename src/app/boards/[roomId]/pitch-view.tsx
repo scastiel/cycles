@@ -4,13 +4,11 @@ import {
   TaskStatus,
   scopeColors,
   useMutation,
-  useOthers,
   useStorage,
-  useUpdateMyPresence,
-} from '@/liveblocks.config'
-import { LiveObject } from '@liveblocks/client'
-import assert from 'assert'
-import { nanoid } from 'nanoid'
+} from "@/liveblocks.config";
+import { LiveObject } from "@liveblocks/client";
+import assert from "assert";
+import { nanoid } from "nanoid";
 import {
   DndContext,
   closestCenter,
@@ -18,56 +16,71 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   CSSProperties,
-  MutableRefObject,
-  PointerEvent,
   PropsWithChildren,
   forwardRef,
-  useRef,
-} from 'react'
-import { useDroppable } from '@dnd-kit/core'
-import { Button } from '@/components/ui/button'
-import { Calendar, Ellipsis, ExternalLink, Plus } from 'lucide-react'
-import { ArchiveCollapsible } from '@/app/boards/[roomId]/archive-collapsible'
-import { TaskView } from './task-view'
-import { match } from 'ts-pattern'
-import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
-import { ScopeIcon } from './scope-icon'
-import Cursor from '@/app/boards/[roomId]/cursor'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
-import { countBy, uniq } from 'lodash'
-import { ScopeDropdownMenu } from '@/app/boards/[roomId]/scope-dropdown-menu'
-import { PitchDropdownMenu } from './pitch-dropdown-menu'
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  ChevronsRight,
+  Ellipsis,
+  ExternalLink,
+  Menu,
+  Plus,
+} from "lucide-react";
+import { ArchiveCollapsible } from "@/app/boards/[roomId]/archive-collapsible";
+import { TaskView } from "./task-view";
+import { match } from "ts-pattern";
+import { PitchDashboard } from "@/app/boards/[roomId]/hill-chart";
+import { ScopeIcon } from "./scope-icon";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SnapshotsDialogContent } from "@/app/boards/[roomId]/snapshots-dialog";
+import { countBy, uniq } from "lodash";
+import { ScopeDropdownMenu } from "@/app/boards/[roomId]/scope-dropdown-menu";
+import { PitchDropdownMenu } from "./pitch-dropdown-menu";
+import { SidePanelCollapsedContext } from "./room";
 
 export function PitchView({ pitchId }: { pitchId: string }) {
   const pitch = useStorage((root) =>
     root.pitches.find((pitch) => pitch.id === pitchId)
-  )
-  assert(pitch, 'Pitch does not exist')
-
-  const divRef = useRef<HTMLDivElement | null>(null)
-  const updateCursorProps = useUpdateMyCursor(divRef)
+  );
+  assert(pitch, "Pitch does not exist");
 
   const archivedScopesCount = useStorage(
     (root) =>
       root.scopes.filter(
         (scope) => scope.pitchId === pitch.id && scope.archived
       ).length
-  )
+  );
+
+  const sidePanelContext = useContext(SidePanelCollapsedContext);
+  const isCollapsed = sidePanelContext?.isCollapsed ?? false;
+  const toggleCollapsed = sidePanelContext?.toggleCollapsed ?? (() => {});
 
   return (
-    <div
-      ref={divRef}
-      className="flex-1 relative mt-10 overflow-auto w-full px-4 py-2 flex flex-col gap-2"
-      {...updateCursorProps}
-    >
-      <OthersCursors pitchId={pitchId} />
+    <div className="flex-1 relative mt-10 overflow-auto w-full px-4 py-2 flex flex-col gap-2">
       <div className="sticky left-0 flex flex-col gap-1 my-2 group">
         <div className="flex items-center gap-4">
+          {isCollapsed && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleCollapsed}
+              className="mr-1 h-8 w-8 -my-2"
+            >
+              <Menu className="size-4" />
+            </Button>
+          )}
           <h2 className="font-bold text-lg">{pitch.title}</h2>
           <PitchDropdownMenu pitch={pitch}>
             <Button
@@ -130,61 +143,14 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         </ArchiveCollapsible>
       )}
     </div>
-  )
-}
-
-function useUpdateMyCursor(divRef: MutableRefObject<HTMLDivElement | null>) {
-  const updateMyPresence = useUpdateMyPresence()
-
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!divRef.current) return
-    const bounds = divRef.current.getBoundingClientRect()
-    const x = event.clientX - bounds.left + divRef.current.scrollLeft
-    const y = event.clientY - bounds.top + divRef.current.scrollTop
-    updateMyPresence({
-      cursor: { x, y },
-    })
-  }
-  const onPointerLeave = () => {
-    updateMyPresence({ cursor: null })
-  }
-
-  return { onPointerMove, onPointerLeave }
-}
-
-function OthersCursors({ pitchId }: { pitchId: string }) {
-  const others = useOthers()
-
-  return (
-    <>
-      {others.map(
-        ({
-          connectionId,
-          presence: { cursor, activePitchId },
-          info: { name, username },
-        }) => {
-          if (!cursor) return null
-          if (activePitchId !== pitchId) return
-
-          return (
-            <Cursor
-              key={connectionId}
-              x={cursor.x}
-              y={cursor.y}
-              name={name ?? username}
-            />
-          )
-        }
-      )}
-    </>
-  )
+  );
 }
 
 function ActiveScopeList({ pitchId }: { pitchId: string }) {
   const scopes = useStorage((root) =>
     root.scopes.filter((scope) => scope.pitchId === pitchId && !scope.archived)
-  )
-  const createScope = useCreateScopeMutation(pitchId)
+  );
+  const createScope = useCreateScopeMutation(pitchId);
 
   return (
     <div className="flex flex-col">
@@ -199,13 +165,13 @@ function ActiveScopeList({ pitchId }: { pitchId: string }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function ArchivedScopeList({ pitchId }: { pitchId: string }) {
   const scopes = useStorage((root) =>
     root.scopes.filter((scope) => scope.pitchId === pitchId && scope.archived)
-  )
+  );
 
   return scopes.length > 0 ? (
     <ul className="flex flex-col">
@@ -215,7 +181,7 @@ function ArchivedScopeList({ pitchId }: { pitchId: string }) {
     </ul>
   ) : (
     <p>No archived scope yet.</p>
-  )
+  );
 }
 
 function ScopeList({ scopes }: { scopes: Scope[] }) {
@@ -224,9 +190,9 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  );
 
-  const updateTaskStatus = useUpdateTaskStatus()
+  const updateTaskStatus = useUpdateTaskStatus();
 
   return (
     <>
@@ -234,19 +200,19 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={(event) => {
-          const { active, over } = event
+          const { active, over } = event;
 
           switch (over?.data.current?.type) {
-            case 'scope-status': {
-              if (active.data.current?.type === 'task') {
-                const taskId = active.id as string
+            case "scope-status": {
+              if (active.data.current?.type === "task") {
+                const taskId = active.id as string;
                 const { scopeId, status } = over.data.current as {
-                  scopeId: string
-                  status: TaskStatus
-                }
-                updateTaskStatus(taskId, scopeId, status)
+                  scopeId: string;
+                  status: TaskStatus;
+                };
+                updateTaskStatus(taskId, scopeId, status);
               }
-              break
+              break;
             }
           }
         }}
@@ -256,7 +222,7 @@ function ScopeList({ scopes }: { scopes: Scope[] }) {
         ))}
       </DndContext>
     </>
-  )
+  );
 }
 
 export function useCreateScopeMutation(pitchId: string) {
@@ -267,27 +233,27 @@ export function useCreateScopeMutation(pitchId: string) {
         .map((scope) => scope.color),
       (a) => a
     )
-  )
+  );
   const colorsSortedByUsage = Object.entries(colorsWithUsage)
     .sort(([color1, count1], [color2, count2]) => count1 - count2)
-    .map(([color]) => color)
+    .map(([color]) => color);
   const firstAvailableColor =
     scopeColors.find((color) => !colorsSortedByUsage.includes(color)) ??
-    colorsSortedByUsage[0]
+    colorsSortedByUsage[0];
 
   return useMutation(
     ({ storage }) => {
-      storage.get('scopes').push(
+      storage.get("scopes").push(
         new LiveObject<Scope>({
           id: nanoid(),
           pitchId,
-          title: 'New scope',
+          title: "New scope",
           color: firstAvailableColor as ScopeColor,
         })
-      )
+      );
     },
     [pitchId, firstAvailableColor]
-  )
+  );
 }
 
 function createUseChangeScopeArchivedMutation(archived: boolean) {
@@ -295,23 +261,43 @@ function createUseChangeScopeArchivedMutation(archived: boolean) {
     return useMutation(
       ({ storage }) => {
         storage
-          .get('scopes')
-          .find((scope) => scope.get('id') === scopeId)
-          ?.set('archived', archived)
+          .get("scopes")
+          .find((scope) => scope.get("id") === scopeId)
+          ?.set("archived", archived);
       },
       [scopeId, archived]
-    )
-  }
+    );
+  };
 }
 export const useArchiveScopeMutation =
-  createUseChangeScopeArchivedMutation(true)
+  createUseChangeScopeArchivedMutation(true);
 export const useRestoreScopeMutation =
-  createUseChangeScopeArchivedMutation(false)
+  createUseChangeScopeArchivedMutation(false);
+
+function useScopeCollapsed(scopeId: string) {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem(`scope-collapsed-${scopeId}`);
+    return stored === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`scope-collapsed-${scopeId}`, String(isCollapsed));
+    }
+  }, [scopeId, isCollapsed]);
+
+  const toggle = () => setIsCollapsed((prev) => !prev);
+
+  return [isCollapsed, toggle] as const;
+}
 
 const ScopeView = forwardRef<
   HTMLDivElement,
   { scope: Scope; style?: CSSProperties }
 >(({ scope, style }, forwardedRef) => {
+  const [isCollapsed, toggleCollapsed] = useScopeCollapsed(scope.id);
+
   return (
     <div
       className="flex-1 flex flex-col gap-2 mt-4"
@@ -320,8 +306,17 @@ const ScopeView = forwardRef<
     >
       <div className="sticky w-fit left-0 group">
         <div className="flex gap-2">
-          <div className="mt-1">
-            <ScopeIcon scope={scope} />
+          <div className="mt-1 cursor-pointer" onClick={toggleCollapsed}>
+            <div className="group-hover:hidden">
+              <ScopeIcon scope={scope} />
+            </div>
+            <div className="hidden group-hover:block">
+              {isCollapsed ? (
+                <ChevronDown className="size-4 text-muted-foreground" />
+              ) : (
+                <ChevronUp className="size-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -338,28 +333,30 @@ const ScopeView = forwardRef<
             </div>
             <p className="text-muted-foreground text-sm">
               {scope.description ||
-                'If we only ship this scope, the user will be able to…'}
+                "If we only ship this scope, the user will be able to…"}
             </p>
           </div>
         </div>
       </div>
-      <div>
-        <ScopeTasksList scopeId={scope.id} />
-      </div>
+      {!isCollapsed && (
+        <div>
+          <ScopeTasksList scopeId={scope.id} />
+        </div>
+      )}
     </div>
-  )
-})
-ScopeView.displayName = 'ScopeView'
+  );
+});
+ScopeView.displayName = "ScopeView";
 
 function ScopeTasksList({ scopeId }: { scopeId: string }) {
   const tasks = useStorage((root) =>
     root.tasks.filter((task) => task.scopeId === scopeId && !task.archived)
-  )
+  );
   return (
     <div className="flex gap-2 w-fit">
       <ScopeStatusTaskList colCount={3} scopeId={scopeId} status="todo">
         {tasks
-          .filter((t) => t.status === 'todo')
+          .filter((t) => t.status === "todo")
           .map((task) => (
             <TaskView key={task.id} task={task} />
           ))}
@@ -371,14 +368,14 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
       </ScopeStatusTaskList>
       <ScopeStatusTaskList colCount={2} scopeId={scopeId} status="in_progress">
         {tasks
-          .filter((t) => t.status === 'in_progress')
+          .filter((t) => t.status === "in_progress")
           .map((task) => (
             <TaskView key={task.id} task={task} />
           ))}
       </ScopeStatusTaskList>
       <ScopeStatusTaskList colCount={3} scopeId={scopeId} status="done">
         {tasks
-          .filter((t) => t.status === 'done')
+          .filter((t) => t.status === "done")
           .map((task) => (
             <div key={task.id}>
               <TaskView task={task} />
@@ -386,7 +383,7 @@ function ScopeTasksList({ scopeId }: { scopeId: string }) {
           ))}
       </ScopeStatusTaskList>
     </div>
-  )
+  );
 }
 
 function ScopeStatusTaskList({
@@ -395,29 +392,29 @@ function ScopeStatusTaskList({
   scopeId,
   status,
 }: PropsWithChildren<{
-  colCount: number
-  scopeId: string
-  status: TaskStatus
+  colCount: number;
+  scopeId: string;
+  status: TaskStatus;
 }>) {
-  const taskWidth = 200
-  const gap = 8
-  const padding = 8
-  const width = taskWidth * colCount + gap * (colCount - 1) + 2 * padding
+  const taskWidth = 200;
+  const gap = 8;
+  const padding = 8;
+  const width = taskWidth * colCount + gap * (colCount - 1) + 2 * padding;
 
   const { isOver, active, setNodeRef } = useDroppable({
     id: `${scopeId}/${status}`,
     data: {
-      type: 'scope-status',
+      type: "scope-status",
       scopeId,
       status,
     },
-  })
-  const accepts = active?.data.current?.type === 'task'
+  });
+  const accepts = active?.data.current?.type === "task";
   const droppableHoverClass1 = accepts
-    ? 'border-slate-200'
-    : 'border-transparent'
-  const droppableHoverClass2 = accepts && isOver ? 'border-slate-500' : ''
-  const createTask = useCreateTaskMutation(scopeId)
+    ? "border-slate-200"
+    : "border-transparent";
+  const droppableHoverClass2 = accepts && isOver ? "border-slate-500" : "";
+  const createTask = useCreateTaskMutation(scopeId);
 
   return (
     <div
@@ -431,9 +428,9 @@ function ScopeStatusTaskList({
       <div className="flex justify-between">
         <div className="text-xs uppercase text-muted-foreground">
           {match(status)
-            .with('todo', () => 'To do')
-            .with('in_progress', () => 'In progress')
-            .with('done', () => 'Done')
+            .with("todo", () => "To do")
+            .with("in_progress", () => "In progress")
+            .with("done", () => "Done")
             .exhaustive()}
         </div>
         <Button
@@ -455,39 +452,39 @@ function ScopeStatusTaskList({
         {children}
       </div>
     </div>
-  )
+  );
 }
 
 function useCreateTaskMutation(scopeId: string) {
   return useMutation(
-    ({ storage }, status: TaskStatus = 'todo') => {
-      storage.get('tasks').push(
+    ({ storage }, status: TaskStatus = "todo") => {
+      storage.get("tasks").push(
         new LiveObject({
           id: nanoid(),
-          title: '',
+          title: "",
           scopeId,
           status,
-          type: 'task',
+          type: "task",
         })
-      )
+      );
     },
     [scopeId]
-  )
+  );
 }
 
 function useUpdateTaskStatus() {
   return useMutation(
     ({ storage }, taskId: string, scopeId: string, status: TaskStatus) => {
       storage
-        .get('tasks')
-        .find((t) => t.get('id') === taskId)
-        ?.update({ status, scopeId })
+        .get("tasks")
+        .find((t) => t.get("id") === taskId)
+        ?.update({ status, scopeId });
       const taskIndex = storage
-        .get('tasks')
-        .findIndex((t) => t.get('id') === taskId)
-      const newTaskIndex = storage.get('tasks').length - 1
-      storage.get('tasks').move(taskIndex, newTaskIndex)
+        .get("tasks")
+        .findIndex((t) => t.get("id") === taskId);
+      const newTaskIndex = storage.get("tasks").length - 1;
+      storage.get("tasks").move(taskIndex, newTaskIndex);
     },
     []
-  )
+  );
 }

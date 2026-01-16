@@ -53,7 +53,6 @@ const client = createClient({
 // `user.presence` property. Must be JSON-serializable.
 type Presence = {
   activePitchId?: string | null
-  cursor?: { x: number; y: number } | null
 }
 
 // Optionally, Storage represents the shared document that persists in the

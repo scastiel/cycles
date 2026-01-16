@@ -30,6 +30,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useCreateScopeMutation } from '@/app/boards/[roomId]/pitch-view'
 import { ScopeDropdownMenu } from './scope-dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const HoveredScopeContext = createContext<{
   hoveredScopeId: string | null
@@ -76,11 +82,13 @@ export function PitchDashboardView({
   disableEdit?: boolean
 }) {
   return (
-    <div className="w-fit flex gap-2">
-      <ScopeList scopes={scopes} pitchId={pitchId} disableEdit={disableEdit} />
-      <HillChart scopes={scopes} disableEdit={disableEdit} />
-      <PriorityMatrix scopes={scopes} disableEdit={disableEdit} />
-    </div>
+    <TooltipProvider delayDuration={0}>
+      <div className="w-fit flex gap-2">
+        <ScopeList scopes={scopes} pitchId={pitchId} disableEdit={disableEdit} />
+        <HillChart scopes={scopes} disableEdit={disableEdit} />
+        <PriorityMatrix scopes={scopes} disableEdit={disableEdit} />
+      </div>
+    </TooltipProvider>
   )
 }
 
@@ -265,16 +273,25 @@ function ReactiveScopeIcon({ scope }: { scope: Scope }) {
   const { hoveredScopeId, setHoveredScopeId } = useHoveredScopeContext()
 
   return (
-    <div
-      className={cn(
-        'rounded-full',
-        hoveredScopeId === scope.id && 'outline outline-slate-500'
-      )}
-      onMouseEnter={() => setHoveredScopeId(scope.id)}
-      onMouseLeave={() => setHoveredScopeId(null)}
-    >
-      <ScopeIcon scope={scope} />
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={cn(
+            'rounded-full',
+            hoveredScopeId === scope.id && 'outline outline-slate-500'
+          )}
+          onMouseEnter={() => setHoveredScopeId(scope.id)}
+          onMouseLeave={() => setHoveredScopeId(null)}
+        >
+          <ScopeIcon scope={scope} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent
+        className="!animate-none !transition-none !transform-none !opacity-100 data-[state=closed]:!animate-none data-[side=bottom]:!slide-in-from-top-0 data-[side=left]:!slide-in-from-right-0 data-[side=right]:!slide-in-from-left-0 data-[side=top]:!slide-in-from-bottom-0"
+      >
+        <p>{scope.title}</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
