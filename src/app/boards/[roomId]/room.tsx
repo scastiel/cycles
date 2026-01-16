@@ -1,5 +1,5 @@
-'use client'
-import { ClientSideSuspense } from '@liveblocks/react'
+"use client";
+import { ClientSideSuspense } from "@liveblocks/react";
 import {
   Pitch,
   RoomProvider,
@@ -8,8 +8,8 @@ import {
   useOthers,
   useStorage,
   useUpdateMyPresence,
-} from '../../../liveblocks.config'
-import { LiveList, LiveObject } from '@liveblocks/client'
+} from "../../../liveblocks.config";
+import { LiveList, LiveObject } from "@liveblocks/client";
 import {
   CSSProperties,
   PropsWithChildren,
@@ -19,9 +19,9 @@ import {
   useContext,
   useEffect,
   useState,
-} from 'react'
-import { nanoid } from 'nanoid'
-import { CSS } from '@dnd-kit/utilities'
+} from "react";
+import { nanoid } from "nanoid";
+import { CSS } from "@dnd-kit/utilities";
 import {
   DndContext,
   closestCenter,
@@ -29,35 +29,41 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import assert from 'assert'
-import { PitchView } from '@/app/boards/[roomId]/pitch-view'
-import { Button } from '@/components/ui/button'
-import { CircleAlert, GripVertical, PlusIcon } from 'lucide-react'
-import { ArchiveCollapsible } from './archive-collapsible'
-import { cn } from '@/lib/utils'
-import { OrganizationUser } from '@/lib/users'
-import { OrganizationUsersProvider } from '@/components/organization-users-context'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import { useToast } from '@/components/ui/use-toast'
-import { match } from 'ts-pattern'
-import { UserAvatar } from '@/app/boards/[roomId]/user-avatar'
-import { uniqBy } from 'lodash'
+} from "@dnd-kit/sortable";
+import assert from "assert";
+import { PitchView } from "@/app/boards/[roomId]/pitch-view";
+import { Button } from "@/components/ui/button";
+import {
+  CircleAlert,
+  GripVertical,
+  PlusIcon,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
+import { ArchiveCollapsible } from "./archive-collapsible";
+import { cn } from "@/lib/utils";
+import { OrganizationUser } from "@/lib/users";
+import { OrganizationUsersProvider } from "@/components/organization-users-context";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/components/ui/use-toast";
+import { match } from "ts-pattern";
+import { UserAvatar } from "@/app/boards/[roomId]/user-avatar";
+import { uniqBy } from "lodash";
 
 export function Room({
   roomId,
   boardTitle,
   organizationUsers,
 }: {
-  roomId: string
-  boardTitle: string
-  organizationUsers: OrganizationUser[]
+  roomId: string;
+  boardTitle: string;
+  organizationUsers: OrganizationUser[];
 }) {
   return (
     <TooltipProvider>
@@ -81,110 +87,119 @@ export function Room({
             {() => (
               <>
                 <ConnectionState />
-                <SelectedPitchRoomContent boardTitle={boardTitle} />
+                <SelectedPitchRoomContent
+                  roomId={roomId}
+                  boardTitle={boardTitle}
+                />
               </>
             )}
           </ClientSideSuspense>
         </RoomProvider>
       </OrganizationUsersProvider>
     </TooltipProvider>
-  )
+  );
 }
 
 function ConnectionState() {
-  const { toast } = useToast()
-  const [status, setStatus] = useState<'online' | 'reconnecting' | 'offline'>(
-    'online'
-  )
+  const { toast } = useToast();
+  const [status, setStatus] = useState<"online" | "reconnecting" | "offline">(
+    "online"
+  );
 
   useLostConnectionListener((event) => {
     match(event)
-      .with('lost', () => {
-        setStatus('reconnecting')
+      .with("lost", () => {
+        setStatus("reconnecting");
         toast({
-          title: 'Warning: Connection lost',
+          title: "Warning: Connection lost",
           description: <>We are still trying to reconnect…</>,
-        })
+        });
       })
-      .with('restored', () => {
-        setStatus('online')
-        toast({ title: 'Successfully reconnected again!' })
+      .with("restored", () => {
+        setStatus("online");
+        toast({ title: "Successfully reconnected again!" });
       })
-      .with('failed', () => {
-        setStatus('offline')
+      .with("failed", () => {
+        setStatus("offline");
         toast({
-          title: 'Warning: Connection lost',
+          title: "Warning: Connection lost",
           description: <>Your changes might not be saved.</>,
-          variant: 'destructive',
-        })
-      })
-  })
+          variant: "destructive",
+        });
+      });
+  });
 
-  if (status === 'online') return null
+  if (status === "online") return null;
 
   return (
     <div
       className={cn(
         // status === 'online' && 'bg-green-600',
-        status === 'reconnecting' && 'bg-orange-600',
-        status === 'offline' && 'bg-red-600',
-        'absolute top-0 left-1/2 -translate-x-1/2 z-20 text-white text-xs px-3 py-1 rounded-b-lg flex flex-row gap-2 items-center'
+        status === "reconnecting" && "bg-orange-600",
+        status === "offline" && "bg-red-600",
+        "absolute top-0 left-1/2 -translate-x-1/2 z-20 text-white text-xs px-3 py-1 rounded-b-lg flex flex-row gap-2 items-center"
       )}
     >
       <CircleAlert className="size-4" />
       <div>
         {match(status)
-          .with('reconnecting', () => <>Connection lost. Reconnecting…</>)
-          .with('offline', () => <>Connection lost</>)
+          .with("reconnecting", () => <>Connection lost. Reconnecting…</>)
+          .with("offline", () => <>Connection lost</>)
           // .with('online', () => <>Online</>)
           .exhaustive()}
       </div>
     </div>
-  )
+  );
 }
 
-function SelectedPitchRoomContent({ boardTitle }: { boardTitle: string }) {
+function SelectedPitchRoomContent({
+  roomId,
+  boardTitle,
+}: {
+  roomId: string;
+  boardTitle: string;
+}) {
   const firstPitchId = useStorage(
-    (root) => root.pitches.filter((pitch) => !pitch.archived).at(0)?.id ?? ''
-  )
+    (root) => root.pitches.filter((pitch) => !pitch.archived).at(0)?.id ?? ""
+  );
   const [selectedPitchId, setSelectedPitchId] = useState<
     string | undefined | null
-  >(null)
+  >(null);
 
   useEffect(() => {
-    const hash = document.location.hash
+    const hash = document.location.hash;
     if (hash) {
-      setSelectedPitchId(hash.replace(/^#/, ''))
+      setSelectedPitchId(hash.replace(/^#/, ""));
     } else {
       if (firstPitchId) {
-        history.replaceState(undefined, '', `#${firstPitchId}`)
+        history.replaceState(undefined, "", `#${firstPitchId}`);
       }
-      setSelectedPitchId(firstPitchId)
+      setSelectedPitchId(firstPitchId);
     }
-  }, [firstPitchId])
+  }, [firstPitchId]);
 
-  if (selectedPitchId === null) return null
+  if (selectedPitchId === null) return null;
 
   return (
     <SelectedPitchContextProvider initialSelectedPitchId={selectedPitchId}>
-      <RoomContent boardTitle={boardTitle} />
+      <RoomContent roomId={roomId} boardTitle={boardTitle} />
     </SelectedPitchContextProvider>
-  )
+  );
 }
 
 const SelectedPitchContext = createContext<{
-  selectedPitchId: string | undefined
-  setSelectedPitchId: (pitchId: string | undefined) => void
-} | null>(null)
+  selectedPitchId: string | undefined;
+  setSelectedPitchId: (pitchId: string | undefined) => void;
+} | null>(null);
 
 const useSelectedPitchContext = () => {
-  const context = useContext(SelectedPitchContext)
+  const context = useContext(SelectedPitchContext);
   assert(
     context,
-    'useSelectedContext must be used inside a SelectedPitchContextProvider'
-  )
-  return context
-}
+    "useSelectedContext must be used inside a SelectedPitchContextProvider"
+  );
+  return context;
+};
 
 function SelectedPitchContextProvider({
   initialSelectedPitchId,
@@ -192,14 +207,14 @@ function SelectedPitchContextProvider({
 }: PropsWithChildren<{ initialSelectedPitchId?: string }>) {
   const [selectedPitchId, _setSelectedPitchId] = useState<string | undefined>(
     initialSelectedPitchId
-  )
-  const updateMyPresence = useUpdateMyPresence()
+  );
+  const updateMyPresence = useUpdateMyPresence();
 
   const setSelectedPitchId = (id: string | undefined) => {
-    updateMyPresence({ activePitchId: id ?? null })
-    _setSelectedPitchId(id)
-    history.pushState(undefined, '', `#${id}`)
-  }
+    updateMyPresence({ activePitchId: id ?? null });
+    _setSelectedPitchId(id);
+    history.pushState(undefined, "", `#${id}`);
+  };
 
   return (
     <SelectedPitchContext.Provider
@@ -207,29 +222,74 @@ function SelectedPitchContextProvider({
     >
       {children}
     </SelectedPitchContext.Provider>
-  )
+  );
 }
 
-function RoomContent({ boardTitle }: { boardTitle: string }) {
-  const { selectedPitchId } = useSelectedPitchContext()
+function useSidePanelCollapsed(roomId: string) {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem(`sidePanel-collapsed-${roomId}`);
+    return stored === "true";
+  });
+
+  const toggleCollapsed = () => {
+    setIsCollapsed((prev) => {
+      const newValue = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`sidePanel-collapsed-${roomId}`, String(newValue));
+      }
+      return newValue;
+    });
+  };
+
+  return { isCollapsed, toggleCollapsed };
+}
+
+export const SidePanelCollapsedContext = createContext<{
+  isCollapsed: boolean;
+  toggleCollapsed: () => void;
+} | null>(null);
+
+function RoomContent({
+  roomId,
+  boardTitle,
+}: {
+  roomId: string;
+  boardTitle: string;
+}) {
+  const { selectedPitchId } = useSelectedPitchContext();
+  const { isCollapsed, toggleCollapsed } = useSidePanelCollapsed(roomId);
 
   return (
-    <div className="flex-1">
-      <div className="fixed top-10 left-0 bottom-0 w-[300px] border-r">
-        <SidePanel boardTitle={boardTitle} />
+    <SidePanelCollapsedContext.Provider
+      value={{ isCollapsed, toggleCollapsed }}
+    >
+      <div className="flex-1">
+        {!isCollapsed && (
+          <div className="fixed top-10 left-0 bottom-0 w-[300px] border-r">
+            <SidePanel boardTitle={boardTitle} />
+          </div>
+        )}
+        <div
+          className={cn(
+            isCollapsed ? "ml-0" : "ml-[300px]",
+            "min-h-[100dvh] flex flex-col"
+          )}
+        >
+          {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
+        </div>
       </div>
-      <div className="ml-[300px] min-h-[100dvh] flex flex-col">
-        {selectedPitchId && <PitchView pitchId={selectedPitchId} />}
-      </div>
-    </div>
-  )
+    </SidePanelCollapsedContext.Provider>
+  );
 }
 
 function SidePanel({ boardTitle }: { boardTitle: string }) {
-  const createPitch = useCreatePitch()
+  const createPitch = useCreatePitch();
   const archivePitchesCount = useStorage(
     (root) => root.pitches.filter((p) => p.archived).length
-  )
+  );
+  const context = useContext(SidePanelCollapsedContext);
+  const toggleCollapsed = context?.toggleCollapsed ?? (() => {});
 
   return (
     <div className="flex flex-col h-full">
@@ -239,8 +299,21 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
             <h2 className="flex-1 font-bold text-lg whitespace-nowrap text-ellipsis overflow-hidden">
               {boardTitle}
             </h2>
-            <Button size="icon" variant="ghost" onClick={createPitch}>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={createPitch}
+              className="h-8 w-8"
+            >
               <PlusIcon className="size-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleCollapsed}
+              className="h-8 w-8"
+            >
+              <ChevronsLeft className="size-4" />
             </Button>
           </div>
         </div>
@@ -257,12 +330,12 @@ function SidePanel({ boardTitle }: { boardTitle: string }) {
         <OnlineUsers />
       </div>
     </div>
-  )
+  );
 }
 
 function OnlineUsers() {
-  const others = useOthers()
-  const users = uniqBy(others, (other) => other.id)
+  const others = useOthers();
+  const users = uniqBy(others, (other) => other.id);
 
   return (
     <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -273,7 +346,7 @@ function OnlineUsers() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function ArchivedPitches({ count }: { count: number }) {
@@ -281,34 +354,34 @@ function ArchivedPitches({ count }: { count: number }) {
     <ArchiveCollapsible label={<>Archived pitches ({count})</>}>
       <ArchivedPitchList />
     </ArchiveCollapsible>
-  )
+  );
 }
 
 function PitchList() {
   const pitches = useStorage((root) =>
     root.pitches.filter((pitch) => !pitch.archived)
-  )
+  );
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
-  )
+  );
 
   const movePitch = useMutation(
     ({ storage }, activeId: string, overId: string) => {
       if (activeId !== overId) {
         const getPitchIndex = (id: string) =>
-          storage.get('pitches').findIndex((pitch) => pitch.get('id') === id)
-        const activeIndex = getPitchIndex(activeId)
-        const overIndex = getPitchIndex(overId)
-        storage.get('pitches').move(activeIndex, overIndex)
+          storage.get("pitches").findIndex((pitch) => pitch.get("id") === id);
+        const activeIndex = getPitchIndex(activeId);
+        const overIndex = getPitchIndex(overId);
+        storage.get("pitches").move(activeIndex, overIndex);
       }
     },
     []
-  )
+  );
 
-  const createPitch = useCreatePitch()
+  const createPitch = useCreatePitch();
 
   return pitches.length > 0 ? (
     <ul className="flex flex-col">
@@ -316,9 +389,9 @@ function PitchList() {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={(event) => {
-          const { active, over } = event
+          const { active, over } = event;
           if (over && active.id !== over.id) {
-            movePitch(String(active.id), String(over.id))
+            movePitch(String(active.id), String(over.id));
           }
         }}
       >
@@ -336,17 +409,17 @@ function PitchList() {
         Create the first one
       </Button>
     </div>
-  )
+  );
 }
 
 function SortablePitchListItem({ pitch }: { pitch: Pitch }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: pitch.id })
+    useSortable({ id: pitch.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
+  };
 
   return (
     <PitchListItem
@@ -359,13 +432,13 @@ function SortablePitchListItem({ pitch }: { pitch: Pitch }) {
       }
       pitch={pitch}
     />
-  )
+  );
 }
 
 function ArchivedPitchList() {
   const pitches = useStorage((root) =>
     root.pitches.filter((pitch) => pitch.archived)
-  )
+  );
   return pitches.length > 0 ? (
     <ul className="flex flex-col">
       {pitches.map((pitch) => (
@@ -374,14 +447,14 @@ function ArchivedPitchList() {
     </ul>
   ) : (
     <p>No archived pitch yet.</p>
-  )
+  );
 }
 
 const PitchListItem = forwardRef<
   HTMLLIElement,
   { pitch: Pitch; grip?: ReactNode; style?: CSSProperties }
 >(({ pitch, grip, style }, forwardedRef) => {
-  const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext()
+  const { selectedPitchId, setSelectedPitchId } = useSelectedPitchContext();
 
   return (
     <li
@@ -395,22 +468,22 @@ const PitchListItem = forwardRef<
           variant="link"
           onClick={() => setSelectedPitchId(pitch.id)}
           className={cn(
-            selectedPitchId === pitch.id && 'font-bold',
-            'flex-1 text-left justify-start overflow-hidden pr-0'
+            selectedPitchId === pitch.id && "font-bold",
+            "flex-1 text-left justify-start overflow-hidden pr-0"
           )}
         >
           <span className="overflow-hidden text-ellipsis">{pitch.title}</span>
         </Button>
       </div>
     </li>
-  )
-})
-PitchListItem.displayName = 'PitchListItem'
+  );
+});
+PitchListItem.displayName = "PitchListItem";
 
 function useCreatePitch() {
   return useMutation(({ storage }) => {
     storage
-      .get('pitches')
-      .push(new LiveObject({ id: nanoid(), title: 'New pitch' }))
-  }, [])
+      .get("pitches")
+      .push(new LiveObject({ id: nanoid(), title: "New pitch" }));
+  }, []);
 }
