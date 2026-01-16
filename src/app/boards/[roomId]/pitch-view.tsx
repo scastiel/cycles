@@ -23,11 +23,15 @@ import {
   PropsWithChildren,
   forwardRef,
   useContext,
+  useState,
+  useEffect,
 } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import {
   Calendar,
+  ChevronDown,
+  ChevronUp,
   ChevronsRight,
   Ellipsis,
   ExternalLink,
@@ -270,10 +274,30 @@ export const useArchiveScopeMutation =
 export const useRestoreScopeMutation =
   createUseChangeScopeArchivedMutation(false);
 
+function useScopeCollapsed(scopeId: string) {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem(`scope-collapsed-${scopeId}`);
+    return stored === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`scope-collapsed-${scopeId}`, String(isCollapsed));
+    }
+  }, [scopeId, isCollapsed]);
+
+  const toggle = () => setIsCollapsed((prev) => !prev);
+
+  return [isCollapsed, toggle] as const;
+}
+
 const ScopeView = forwardRef<
   HTMLDivElement,
   { scope: Scope; style?: CSSProperties }
 >(({ scope, style }, forwardedRef) => {
+  const [isCollapsed, toggleCollapsed] = useScopeCollapsed(scope.id);
+
   return (
     <div
       className="flex-1 flex flex-col gap-2 mt-4"
@@ -282,8 +306,17 @@ const ScopeView = forwardRef<
     >
       <div className="sticky w-fit left-0 group">
         <div className="flex gap-2">
-          <div className="mt-1">
-            <ScopeIcon scope={scope} />
+          <div className="mt-1 cursor-pointer" onClick={toggleCollapsed}>
+            <div className="group-hover:hidden">
+              <ScopeIcon scope={scope} />
+            </div>
+            <div className="hidden group-hover:block">
+              {isCollapsed ? (
+                <ChevronDown className="size-4 text-muted-foreground" />
+              ) : (
+                <ChevronUp className="size-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -305,9 +338,11 @@ const ScopeView = forwardRef<
           </div>
         </div>
       </div>
-      <div>
-        <ScopeTasksList scopeId={scope.id} />
-      </div>
+      {!isCollapsed && (
+        <div>
+          <ScopeTasksList scopeId={scope.id} />
+        </div>
+      )}
     </div>
   );
 });
