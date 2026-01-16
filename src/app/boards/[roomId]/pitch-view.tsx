@@ -4,9 +4,7 @@ import {
   TaskStatus,
   scopeColors,
   useMutation,
-  useOthers,
   useStorage,
-  useUpdateMyPresence,
 } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
 import assert from 'assert'
@@ -22,11 +20,8 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import {
   CSSProperties,
-  MutableRefObject,
-  PointerEvent,
   PropsWithChildren,
   forwardRef,
-  useRef,
 } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/components/ui/button'
@@ -36,7 +31,6 @@ import { TaskView } from './task-view'
 import { match } from 'ts-pattern'
 import { PitchDashboard } from '@/app/boards/[roomId]/hill-chart'
 import { ScopeIcon } from './scope-icon'
-import Cursor from '@/app/boards/[roomId]/cursor'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { SnapshotsDialogContent } from '@/app/boards/[roomId]/snapshots-dialog'
 import { countBy, uniq } from 'lodash'
@@ -49,9 +43,6 @@ export function PitchView({ pitchId }: { pitchId: string }) {
   )
   assert(pitch, 'Pitch does not exist')
 
-  const divRef = useRef<HTMLDivElement | null>(null)
-  const updateCursorProps = useUpdateMyCursor(divRef)
-
   const archivedScopesCount = useStorage(
     (root) =>
       root.scopes.filter(
@@ -61,11 +52,8 @@ export function PitchView({ pitchId }: { pitchId: string }) {
 
   return (
     <div
-      ref={divRef}
       className="flex-1 relative mt-10 overflow-auto w-full px-4 py-2 flex flex-col gap-2"
-      {...updateCursorProps}
     >
-      <OthersCursors pitchId={pitchId} />
       <div className="sticky left-0 flex flex-col gap-1 my-2 group">
         <div className="flex items-center gap-4">
           <h2 className="font-bold text-lg">{pitch.title}</h2>
@@ -130,53 +118,6 @@ export function PitchView({ pitchId }: { pitchId: string }) {
         </ArchiveCollapsible>
       )}
     </div>
-  )
-}
-
-function useUpdateMyCursor(divRef: MutableRefObject<HTMLDivElement | null>) {
-  const updateMyPresence = useUpdateMyPresence()
-
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!divRef.current) return
-    const bounds = divRef.current.getBoundingClientRect()
-    const x = event.clientX - bounds.left + divRef.current.scrollLeft
-    const y = event.clientY - bounds.top + divRef.current.scrollTop
-    updateMyPresence({
-      cursor: { x, y },
-    })
-  }
-  const onPointerLeave = () => {
-    updateMyPresence({ cursor: null })
-  }
-
-  return { onPointerMove, onPointerLeave }
-}
-
-function OthersCursors({ pitchId }: { pitchId: string }) {
-  const others = useOthers()
-
-  return (
-    <>
-      {others.map(
-        ({
-          connectionId,
-          presence: { cursor, activePitchId },
-          info: { name, username },
-        }) => {
-          if (!cursor) return null
-          if (activePitchId !== pitchId) return
-
-          return (
-            <Cursor
-              key={connectionId}
-              x={cursor.x}
-              y={cursor.y}
-              name={name ?? username}
-            />
-          )
-        }
-      )}
-    </>
   )
 }
 
