@@ -5,12 +5,14 @@ import { auth } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 
 export default async function RoomPage({
-  params: { roomId: slug },
+  params,
 }: {
-  params: { roomId: string }
+  params: Promise<{ roomId: string }>
 }) {
-  const { userId, orgId } = auth()
-  if (!userId) auth().redirectToSignIn()
+  const { roomId: slug } = await params
+  const authResult = await auth()
+  const { userId, orgId } = authResult
+  if (!userId) authResult.redirectToSignIn()
 
   const roomPrefix = orgId ?? userId
 

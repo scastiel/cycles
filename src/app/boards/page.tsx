@@ -22,8 +22,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export default async function OrganizationsPage() {
-  const { userId, orgId } = auth()
-  if (!userId) return auth().redirectToSignIn()
+  const authResult = await auth()
+  const { userId, orgId } = authResult
+  if (!userId) return authResult.redirectToSignIn()
 
   const roomPrefix = orgId ?? userId
   const { data: rooms } = await liveblocks.getRooms({
@@ -193,7 +194,7 @@ async function BoardListItem({ room }: { room: RoomInfo }) {
 async function updateBoard(formData: FormData) {
   'use server'
 
-  const { userId, orgId } = auth()
+  const { userId, orgId } = await auth()
   if (!userId) throw new Error('Not authenticated')
 
   const roomId = formData.get('roomId')
@@ -232,7 +233,7 @@ async function updateBoard(formData: FormData) {
 async function createRoom(formData: FormData) {
   'use server'
 
-  const { userId, orgId } = auth()
+  const { userId, orgId } = await auth()
   if (!userId) throw new Error('Not authenticated')
 
   const roomPrefix = orgId ?? userId
