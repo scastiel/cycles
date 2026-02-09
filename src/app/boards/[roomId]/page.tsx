@@ -9,8 +9,8 @@ export default async function RoomPage({
 }: {
   params: { roomId: string }
 }) {
-  const { userId, orgId } = auth()
-  if (!userId) auth().redirectToSignIn()
+  const { userId, orgId } = await auth()
+  if (!userId) (await auth()).redirectToSignIn()
 
   const roomPrefix = orgId ?? userId
 

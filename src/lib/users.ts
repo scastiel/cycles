@@ -13,8 +13,9 @@ export async function getOrganizationUsers(
 ): Promise<OrganizationUser[]> {
   if (!organizationId) return []
 
+  const client = await clerkClient()
   const { data: memberships } =
-    await clerkClient.organizations.getOrganizationMembershipList({
+    await client.organizations.getOrganizationMembershipList({
       organizationId,
       limit: 100,
     })
