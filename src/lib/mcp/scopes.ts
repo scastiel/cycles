@@ -113,10 +113,13 @@ export function registerScopeTools(server: McpServer) {
         .describe('New color (color-1 through color-8)'),
       progress: z
         .number()
+        .int()
         .min(0)
-        .max(1)
+        .max(8)
         .optional()
-        .describe('Progress (0 to 1)'),
+        .describe(
+          'Progress on the hill chart (0-8). 0-3: uphill/figuring out, 4: top of hill, 5-8: downhill/executing'
+        ),
       effort: z
         .number()
         .min(0)
